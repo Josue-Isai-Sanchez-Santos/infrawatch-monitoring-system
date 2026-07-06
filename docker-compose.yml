@@ -4,9 +4,9 @@ services:
     container_name: infrawatch_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: infrawatch
-      POSTGRES_USER: infrawatch_user
-      POSTGRES_PASSWORD: infrawatch_password
+      POSTGRES_DB: ${POSTGRES_DB:-infrawatch}
+      POSTGRES_USER: ${POSTGRES_USER:-infrawatch_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_local}
     ports:
       - "5432:5432"
     volumes:
