@@ -1,8 +1,25 @@
 # InfraWatch Monitoring System
 
-InfraWatch es un sistema web de monitoreo de infraestructura TI desarrollado con Laravel, Filament, PostgreSQL y un agente Python. Su objetivo es registrar equipos, monitorear servicios de red, recolectar métricas del sistema y mostrar alertas desde un panel administrativo.
+<p align="center">
+  <strong>Sistema web de monitoreo de infraestructura TI</strong>
+</p>
 
-Este proyecto está pensado como una solución base para supervisar servidores, estaciones de trabajo, servicios TCP y métricas básicas como CPU, RAM, disco y uptime.
+<p align="center">
+  <img src="https://img.shields.io/badge/Laravel-Backend-red?style=for-the-badge&logo=laravel" />
+  <img src="https://img.shields.io/badge/Filament-Admin%20Panel-orange?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Database-blue?style=for-the-badge&logo=postgresql" />
+  <img src="https://img.shields.io/badge/Python-Agent-green?style=for-the-badge&logo=python" />
+</p>
+
+---
+
+## Descripción
+
+**InfraWatch** es un sistema web de monitoreo de infraestructura TI desarrollado con **Laravel**, **Filament**, **PostgreSQL** y un **agente Python**.
+
+El sistema permite registrar equipos, monitorear servicios de red por puerto TCP, recolectar métricas del sistema y visualizar alertas desde un panel administrativo.
+
+Está pensado como una solución base para supervisar servidores, estaciones de trabajo, servicios internos y métricas básicas como CPU, RAM, disco y uptime.
 
 ---
 
@@ -12,12 +29,12 @@ Este proyecto está pensado como una solución base para supervisar servidores, 
 - Registro de equipos monitoreados.
 - Registro de servicios asociados a cada equipo.
 - Monitoreo de puertos TCP mediante comando Artisan.
-- Scheduler para ejecutar revisiones automáticas.
+- Ejecución automática mediante Laravel Scheduler.
 - Historial de chequeos de servicios.
 - Generación de alertas cuando un servicio deja de responder.
 - Resolución automática de alertas cuando el servicio vuelve a estar disponible.
 - Agente Python para recolectar métricas del sistema.
-- Recepción de métricas mediante API REST.
+- API REST para recepción de métricas.
 - Dashboard con estadísticas generales.
 - Base de datos PostgreSQL.
 - Entorno local con Docker.
@@ -26,27 +43,82 @@ Este proyecto está pensado como una solución base para supervisar servidores, 
 
 ## Tecnologías utilizadas
 
-### Backend
+| Área | Tecnología |
+|---|---|
+| Backend | Laravel |
+| Panel administrativo | Filament |
+| Base de datos | PostgreSQL |
+| Contenedores | Docker |
+| Agente | Python |
+| Métricas del sistema | psutil |
+| Comunicación HTTP | requests |
+| Control de versiones | Git / GitHub |
 
-- PHP
-- Laravel
-- Filament
-- PostgreSQL
-- Docker
-- Composer
+---
 
-### Agente
+## Arquitectura general
 
-- Python
-- psutil
-- requests
+```text
++-------------------------+
+| Equipo monitoreado      |
+| Agente Python           |
+| CPU / RAM / Disco       |
++-----------+-------------+
+            |
+            | HTTP POST /api/agent/metrics
+            v
++-------------------------+
+| Backend Laravel         |
+| API + Comandos Artisan  |
+| Filament Admin Panel    |
++-----------+-------------+
+            |
+            v
++-------------------------+
+| PostgreSQL              |
+| Hosts / Services        |
+| Metrics / Alerts        |
++-----------+-------------+
+            |
+            v
++-------------------------+
+| Dashboard Filament      |
+| Estado general          |
+| Alertas e historial     |
++-------------------------+
+```
 
-### Herramientas
+Documentación completa de arquitectura:
 
-- Git
-- GitHub
-- WSL Ubuntu
-- Visual Studio Code
+[Ver arquitectura](docs/architecture.md)
+
+---
+
+## Capturas del sistema
+
+### Dashboard principal
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Equipos monitoreados
+
+![Monitored Hosts](docs/screenshots/hosts.png)
+
+### Servicios monitoreados
+
+![Monitored Services](docs/screenshots/services.png)
+
+### Historial de chequeos
+
+![Service Checks](docs/screenshots/service-checks.png)
+
+### Métricas del host
+
+![Host Metrics](docs/screenshots/host-metrics.png)
+
+### Alertas
+
+![Alerts](docs/screenshots/alerts.png)
 
 ---
 
@@ -73,229 +145,165 @@ infrawatch-monitoring-system/
 │
 ├── .gitignore
 └── README.md
-Arquitectura general
+```
 
-InfraWatch se divide en dos módulos principales:
+---
 
-Backend Laravel
-Administra equipos, servicios, métricas, alertas e historial.
-Expone una API para recibir métricas desde agentes externos.
-Ejecuta chequeos de servicios mediante comandos programados.
-Agente Python
-Se instala en el equipo que se desea monitorear.
-Recolecta información de CPU, RAM, disco, hostname, IP, sistema operativo y uptime.
-Envía las métricas al backend mediante HTTP POST.
+## Módulos principales
 
-Flujo general:
+| Módulo | Descripción |
+|---|---|
+| Monitored Hosts | Registro de equipos monitoreados. |
+| Monitored Services | Servicios TCP asociados a cada equipo. |
+| Service Checks | Historial de revisiones de disponibilidad. |
+| Host Metrics | Métricas enviadas por el agente Python. |
+| Alerts | Alertas generadas por fallos detectados. |
+| Dashboard | Vista general del estado de la infraestructura. |
 
-Equipo monitoreado
-    ↓
-Agente Python recolecta métricas
-    ↓
-API Laravel recibe datos
-    ↓
-PostgreSQL almacena métricas e historial
-    ↓
-Filament muestra dashboard, alertas y reportes
-Capturas del sistema
-Dashboard
+---
 
-Equipos monitoreados
+## Instalación rápida
 
-Servicios monitoreados
+### 1. Clonar el repositorio
 
-Historial de chequeos
+```bash
+git clone https://github.com/Josue-Isai-Sanchez-Santos/infrawatch-monitoring-system.git
+cd infrawatch-monitoring-system
+```
 
-Métricas del host
+### 2. Instalar backend
 
-Alertas
-
-Instalación del backend
-
-Entrar a la carpeta del backend:
-
+```bash
 cd backend
-
-Instalar dependencias de PHP:
-
 composer install
-
-Copiar archivo de entorno:
-
 cp .env.example .env
-
-Generar llave de aplicación:
-
 php artisan key:generate
-
-Levantar PostgreSQL con Docker:
-
 docker compose up -d
-
-Ejecutar migraciones:
-
 php artisan migrate
-
-Crear usuario administrador de Filament:
-
 php artisan make:filament-user
-
-Levantar servidor local:
-
 php artisan serve
+```
 
-Acceder al panel:
+Panel administrativo:
 
+```text
 http://127.0.0.1:8000/admin
-Instalación del agente Python
+```
 
-Entrar a la carpeta del agente:
+### 3. Instalar agente Python
 
+En otra terminal:
+
+```bash
 cd agent
-
-Crear entorno virtual:
-
 python3 -m venv venv
-
-Activar entorno virtual:
-
 source venv/bin/activate
-
-Instalar dependencias:
-
 pip install -r requirements.txt
-
-Configurar el token del agente dentro de agent.py o mediante archivo .env, dependiendo de la versión implementada.
-
-Ejecutar el agente:
-
 python agent.py
-Comandos principales
+```
 
-Ejecutar monitoreo manual de servicios:
+---
 
+## Comandos principales
+
+### Ejecutar monitoreo manual de servicios
+
+```bash
 php artisan monitor:services
+```
 
-Ejecutar scheduler en desarrollo:
+### Ejecutar scheduler en desarrollo
 
+```bash
 php artisan schedule:work
+```
 
-Ejecutar tareas programadas una sola vez:
+### Ejecutar tareas programadas una sola vez
 
+```bash
 php artisan schedule:run
+```
 
-Limpiar caché de Laravel:
+### Limpiar caché de Laravel
 
+```bash
 php artisan optimize:clear
+```
 
-Ver rutas registradas:
+### Ver rutas registradas
 
+```bash
 php artisan route:list
-Módulos principales
-Monitored Hosts
+```
 
-Permite registrar equipos que serán monitoreados.
+---
 
-Campos principales:
+## API
 
-Nombre
-Hostname
-Dirección IP
-Sistema operativo
-Tipo de equipo
-Ubicación
-Estado
-Token del agente
-Última conexión
-Monitored Services
+InfraWatch cuenta con una API para recibir métricas desde agentes externos.
 
-Permite registrar servicios asociados a un equipo.
+Endpoint principal:
 
-Campos principales:
+```http
+POST /api/agent/metrics
+```
 
-Equipo
-Nombre del servicio
-Puerto
-Protocolo
-Estado
-Última revisión
-Service Checks
+Documentación completa:
 
-Guarda el historial de revisiones realizadas por el comando de monitoreo.
+[Ver documentación de API](docs/api.md)
 
-Campos principales:
+---
 
-Servicio
-Estado
-Tiempo de respuesta
-Mensaje
-Fecha de revisión
-Host Metrics
+## Estado actual
 
-Guarda las métricas enviadas por el agente Python.
-
-Campos principales:
-
-Equipo
-Uso de CPU
-Uso de RAM
-Uso de disco
-Uptime
-Fecha de registro
-Alerts
-
-Registra alertas generadas por fallos detectados.
-
-Campos principales:
-
-Equipo
-Servicio
-Tipo
-Severidad
-Título
-Mensaje
-Estado
-Fecha de activación
-Fecha de resolución
-Estado actual del proyecto
-
-Versión actual: V1 en desarrollo
+Versión actual: **V1 en desarrollo**
 
 Funcionalidades implementadas:
 
-Backend Laravel funcional.
-Panel administrativo con Filament.
-Base de datos PostgreSQL en Docker.
-CRUD de equipos monitoreados.
-CRUD de servicios monitoreados.
-Comando de monitoreo TCP.
-Scheduler de Laravel.
-Historial de chequeos.
-Dashboard con estadísticas.
-Alertas básicas.
-Agente Python para métricas del sistema.
-API para recepción de métricas.
-Próximas mejoras
-Gráficas históricas de CPU, RAM y disco.
-Notificaciones por correo electrónico.
-Notificaciones por Telegram.
-Roles y permisos.
-Reportes PDF.
-Limpieza automática de métricas antiguas.
-Docker Compose completo para backend, base de datos y servicios auxiliares.
-Tests automatizados.
-GitHub Actions para validación del proyecto.
-Deploy en VPS o servidor local.
-Seguridad
+- Backend Laravel funcional.
+- Panel administrativo con Filament.
+- Base de datos PostgreSQL en Docker.
+- CRUD de equipos monitoreados.
+- CRUD de servicios monitoreados.
+- Comando de monitoreo TCP.
+- Scheduler de Laravel.
+- Historial de chequeos.
+- Dashboard con estadísticas.
+- Alertas básicas.
+- Agente Python para métricas del sistema.
+- API para recepción de métricas.
 
-El archivo .env no debe subirse al repositorio.
+---
+
+## Próximas mejoras
+
+- Gráficas históricas de CPU, RAM y disco.
+- Notificaciones por correo electrónico.
+- Notificaciones por Telegram.
+- Roles y permisos.
+- Reportes PDF.
+- Limpieza automática de métricas antiguas.
+- Docker Compose completo para backend, base de datos y servicios auxiliares.
+- Tests automatizados.
+- GitHub Actions.
+- Deploy en VPS o servidor local.
+
+---
+
+## Seguridad
+
+El archivo `.env` no debe subirse al repositorio.
 
 Solo deben subirse archivos de ejemplo como:
 
+```text
 .env.example
+```
 
 El token real del agente debe mantenerse privado.
 
-Autor
+---
 
-Proyecto desarrollado por Josue Sanchez como parte de su portafolio técnico en sistemas, redes, monitoreo e infraestructura TI.
+## Autor
+
+Desarrollado por **Josue Sanchez** como proyecto de portafolio técnico enfocado en sistemas, redes, monitoreo e infraestructura TI.

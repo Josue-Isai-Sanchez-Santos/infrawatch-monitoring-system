@@ -8,8 +8,6 @@ Este módulo recolecta métricas básicas del sistema operativo y las envía al 
 
 ## Métricas recolectadas
 
-El agente recolecta:
-
 - Hostname
 - Dirección IP
 - Sistema operativo
@@ -22,54 +20,78 @@ El agente recolecta:
 
 ## Tecnologías
 
-- Python
-- psutil
-- requests
+| Tecnología | Uso |
+|---|---|
+| Python | Lenguaje del agente |
+| psutil | Lectura de métricas del sistema |
+| requests | Envío HTTP hacia el backend |
 
 ---
 
 ## Instalación
 
-Entrar a la carpeta del agente:
+### 1. Entrar a la carpeta del agente
 
 ```bash
 cd agent
+```
 
-Crear entorno virtual:
+### 2. Crear entorno virtual
 
+```bash
 python3 -m venv venv
+```
 
-Activar entorno virtual:
+### 3. Activar entorno virtual
 
+```bash
 source venv/bin/activate
+```
 
-Instalar dependencias:
+### 4. Instalar dependencias
 
+```bash
 pip install -r requirements.txt
-Configuración
+```
 
-El agente necesita conocer la URL de la API y el token asignado al equipo monitoreado.
+---
 
-Ejemplo de configuración dentro de agent.py:
+## Configuración
 
+El agente necesita la URL de la API y el token asignado al equipo monitoreado.
+
+Ejemplo dentro de `agent.py`:
+
+```python
 API_URL = "http://127.0.0.1:8000/api/agent/metrics"
 AGENT_TOKEN = "your-agent-token"
+```
 
-El token debe coincidir con el campo agent_token del equipo registrado en el panel de InfraWatch.
+El token debe coincidir con el campo `agent_token` del equipo registrado en el panel de InfraWatch.
 
-Ejecución
+---
+
+## Ejecución
 
 Con el backend encendido:
 
+```bash
 python agent.py
+```
 
 Respuesta esperada:
 
+```text
 Métricas enviadas correctamente
+```
 
 Si el token no existe o no coincide, el backend responderá con error de autorización.
 
-Flujo de trabajo
+---
+
+## Flujo de trabajo
+
+```text
 Agente Python
     ↓
 Recolecta CPU, RAM, disco y uptime
@@ -81,27 +103,41 @@ Backend Laravel valida el token
 Backend guarda las métricas
     ↓
 Filament muestra los datos en Host Metrics
-Dependencias
+```
+
+---
+
+## Dependencias
 
 Las dependencias se encuentran en:
 
+```text
 requirements.txt
+```
 
 Instalación:
 
+```bash
 pip install -r requirements.txt
-Seguridad
+```
+
+---
+
+## Seguridad
 
 No se recomienda dejar tokens reales escritos directamente en el código en entornos productivos.
 
-Para una versión más segura se recomienda usar variables de entorno o un archivo .env local no rastreado por Git.
+Para una versión más segura se recomienda usar variables de entorno o un archivo `.env` local no rastreado por Git.
 
-El archivo .env debe permanecer fuera del repositorio.
+El archivo `.env` debe permanecer fuera del repositorio.
 
-Mejoras futuras
-Lectura de configuración desde .env.
-Ejecución continua cada cierto intervalo.
-Instalación como servicio de sistema.
-Envío de métricas de red.
-Envío de temperatura del sistema si el hardware lo permite.
-Logs locales del agente.
+---
+
+## Mejoras futuras
+
+- Lectura de configuración desde `.env`.
+- Ejecución continua cada cierto intervalo.
+- Instalación como servicio de sistema.
+- Envío de métricas de red.
+- Envío de temperatura del sistema si el hardware lo permite.
+- Logs locales del agente.

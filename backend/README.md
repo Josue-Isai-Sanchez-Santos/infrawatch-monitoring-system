@@ -1,19 +1,20 @@
 # InfraWatch Backend
 
-Backend principal de InfraWatch desarrollado con Laravel, Filament y PostgreSQL.
+Backend principal de InfraWatch desarrollado con **Laravel**, **Filament** y **PostgreSQL**.
 
-Este módulo se encarga de administrar equipos monitoreados, servicios, métricas, alertas, historial de chequeos y API para agentes externos.
+Este módulo administra equipos monitoreados, servicios, métricas, alertas, historial de chequeos y la API para agentes externos.
 
 ---
 
 ## Tecnologías
 
-- PHP
-- Laravel
-- Filament
-- PostgreSQL
-- Docker
-- Composer
+| Tecnología | Uso |
+|---|---|
+| Laravel | Backend principal |
+| Filament | Panel administrativo |
+| PostgreSQL | Base de datos |
+| Docker | Base de datos local |
+| Composer | Dependencias PHP |
 
 ---
 
@@ -29,186 +30,232 @@ Este módulo se encarga de administrar equipos monitoreados, servicios, métrica
 
 ## Instalación
 
-Entrar a la carpeta del backend:
+### 1. Entrar a la carpeta del backend
 
 ```bash
 cd backend
+```
 
-Instalar dependencias:
+### 2. Instalar dependencias
 
+```bash
 composer install
+```
 
-Copiar archivo de entorno:
+### 3. Copiar archivo de entorno
 
+```bash
 cp .env.example .env
+```
 
-Generar llave de aplicación:
+### 4. Generar llave de aplicación
 
+```bash
 php artisan key:generate
+```
 
-Levantar PostgreSQL:
+### 5. Levantar PostgreSQL
 
+```bash
 docker compose up -d
+```
 
-Ejecutar migraciones:
+### 6. Ejecutar migraciones
 
+```bash
 php artisan migrate
+```
 
-Crear usuario administrador para Filament:
+### 7. Crear usuario administrador
 
+```bash
 php artisan make:filament-user
+```
 
-Levantar servidor local:
+### 8. Levantar servidor local
 
+```bash
 php artisan serve
+```
 
-Acceder al panel:
+Panel administrativo:
 
+```text
 http://127.0.0.1:8000/admin
-Configuración de base de datos
+```
 
-Configuración esperada en .env para desarrollo local:
+---
 
+## Configuración de base de datos
+
+Configuración esperada en `.env` para desarrollo local:
+
+```env
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_DATABASE=infrawatch
 DB_USERNAME=infrawatch_user
 DB_PASSWORD=infrawatch_password
-Docker Compose
+```
 
-El backend incluye un archivo docker-compose.yml para levantar PostgreSQL localmente.
+---
 
-Comando para iniciar:
+## Docker Compose
 
+Iniciar PostgreSQL:
+
+```bash
 docker compose up -d
+```
 
-Comando para detener:
+Detener contenedores:
 
+```bash
 docker compose down
+```
 
-Comando para revisar contenedores:
+Revisar contenedores activos:
 
+```bash
 docker ps
-Panel administrativo
+```
 
-El panel administrativo está construido con Filament.
+---
+
+## Panel administrativo
 
 Ruta local:
 
+```text
 /admin
+```
 
-Módulos principales:
+Módulos disponibles:
 
-Monitored Hosts
-Monitored Services
-Host Metrics
-Service Checks
-Alerts
-Comando de monitoreo de servicios
+- Monitored Hosts
+- Monitored Services
+- Host Metrics
+- Service Checks
+- Alerts
+- Dashboard
+
+---
+
+## Comando de monitoreo de servicios
 
 InfraWatch incluye un comando Artisan para revisar servicios TCP registrados.
 
-Ejecutar manualmente:
-
+```bash
 php artisan monitor:services
+```
 
 El comando realiza lo siguiente:
 
-Lee todos los servicios registrados.
-Obtiene la IP del equipo asociado.
-Intenta conectarse al puerto configurado.
-Mide el tiempo de respuesta.
-Guarda un registro en service_checks.
-Actualiza el estado del servicio.
-Actualiza el estado del equipo.
-Genera una alerta si el servicio no responde.
-Resuelve alertas abiertas si el servicio vuelve a responder.
-Scheduler
+1. Lee todos los servicios registrados.
+2. Obtiene la IP del equipo asociado.
+3. Intenta conectarse al puerto configurado.
+4. Mide el tiempo de respuesta.
+5. Guarda un registro en `service_checks`.
+6. Actualiza el estado del servicio.
+7. Actualiza el estado del equipo.
+8. Genera una alerta si el servicio no responde.
+9. Resuelve alertas abiertas si el servicio vuelve a responder.
 
-Para ejecutar el monitoreo automáticamente se usa el scheduler de Laravel.
+---
+
+## Scheduler
+
+Para ejecutar el monitoreo automáticamente se usa Laravel Scheduler.
 
 En desarrollo:
 
+```bash
 php artisan schedule:work
+```
 
 Para ejecutar las tareas programadas una sola vez:
 
+```bash
 php artisan schedule:run
+```
 
 La programación se configura en:
 
+```text
 routes/console.php
+```
 
 Ejemplo:
 
+```php
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('monitor:services')->everyMinute();
-API
+```
+
+---
+
+## API
 
 El backend expone una API para recibir métricas del agente Python.
 
 Endpoint:
 
+```http
 POST /api/agent/metrics
+```
 
-Más información en:
+Documentación completa:
 
-docs/api.md
-Modelos principales
-MonitoredHost
+[Ver documentación de API](../docs/api.md)
 
-Representa un equipo monitoreado.
+---
 
-Relaciones:
+## Modelos principales
 
-Tiene muchos servicios.
-Tiene muchas métricas.
-Tiene muchas alertas.
-MonitoredService
+| Modelo | Descripción |
+|---|---|
+| `MonitoredHost` | Equipo monitoreado. |
+| `MonitoredService` | Servicio TCP asociado a un equipo. |
+| `ServiceCheck` | Registro histórico de revisión de un servicio. |
+| `HostMetric` | Métrica enviada por un agente. |
+| `Alert` | Alerta generada por fallas o eventos importantes. |
 
-Representa un servicio TCP asociado a un equipo.
+---
 
-Relaciones:
-
-Pertenece a un equipo.
-Tiene muchos chequeos.
-Tiene muchas alertas.
-ServiceCheck
-
-Representa un registro histórico de revisión de un servicio.
-
-HostMetric
-
-Representa una métrica enviada por un agente.
-
-Alert
-
-Representa una alerta generada por una falla o evento importante.
-
-Comandos útiles
+## Comandos útiles
 
 Limpiar caché:
 
+```bash
 php artisan optimize:clear
+```
 
 Ver rutas:
 
+```bash
 php artisan route:list
+```
 
 Ver migraciones:
 
+```bash
 php artisan migrate:status
+```
 
 Recrear base de datos en desarrollo:
 
+```bash
 php artisan migrate:fresh
-Seguridad
+```
 
-No subir el archivo .env.
+---
 
-El archivo .env.example sí puede subirse porque solo contiene valores de ejemplo.
+## Seguridad
+
+No subir el archivo `.env`.
+
+El archivo `.env.example` sí puede subirse porque solo contiene valores de ejemplo.
 
 El token real del agente debe mantenerse privado.
-
