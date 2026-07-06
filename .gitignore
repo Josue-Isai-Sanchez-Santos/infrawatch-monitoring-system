@@ -30,3 +30,7 @@ Thumbs.db
 /storage/logs/*
 !/storage/logs/.gitignore
 
+
+# Environment files
+/.env.*
+!.env.example
