@@ -306,4 +306,4 @@ El token real del agente debe mantenerse privado.
 
 ## Autor
 
-Desarrollado por **Josue Sanchez** como proyecto de portafolio técnico enfocado en sistemas, redes, monitoreo e infraestructura TI.
+Desarrollado por **Josue Isai Sanchez Santos** como proyecto de portafolio técnico enfocado en sistemas, redes, monitoreo e infraestructura TI.

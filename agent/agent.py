@@ -1,3 +1,4 @@
+import argparse
 import os
 import platform
 import socket
@@ -12,6 +13,7 @@ load_dotenv()
 
 API_URL = os.getenv("API_URL")
 AGENT_TOKEN = os.getenv("AGENT_TOKEN")
+DEFAULT_INTERVAL_SECONDS = int(os.getenv("INTERVAL_SECONDS", "60"))
 
 
 def get_ip_address():
@@ -71,5 +73,43 @@ def send_metrics():
         return False
 
 
-if __name__ == "__main__":
+def run_once():
     send_metrics()
+
+
+def run_forever(interval_seconds):
+    print(f"Agente iniciado en modo automático cada {interval_seconds} segundos.")
+
+    while True:
+        send_metrics()
+        time.sleep(interval_seconds)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="InfraWatch Python Agent")
+
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Ejecuta el agente una sola vez.",
+    )
+
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=None,
+        help="Ejecuta el agente automáticamente cada N segundos.",
+    )
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    if args.once:
+        run_once()
+    elif args.interval:
+        run_forever(args.interval)
+    else:
+        run_once()

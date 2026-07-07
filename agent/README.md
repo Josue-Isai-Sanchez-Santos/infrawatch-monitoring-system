@@ -58,16 +58,24 @@ pip install -r requirements.txt
 
 ## Configuración
 
-El agente necesita la URL de la API y el token asignado al equipo monitoreado.
+El agente utiliza un archivo `.env` local para cargar la URL de la API y el token del equipo monitoreado.
 
-Ejemplo dentro de `agent.py`:
+Crear el archivo `.env`:
 
-```python
-API_URL = "http://127.0.0.1:8000/api/agent/metrics"
-AGENT_TOKEN = "your-agent-token"
+```bash
+cp .env.example .env
 ```
 
-El token debe coincidir con el campo `agent_token` del equipo registrado en el panel de InfraWatch.
+Ejemplo de `.env`:
+
+```env
+API_URL=http://127.0.0.1:8000/api/agent/metrics
+AGENT_TOKEN=your-agent-token-here
+```
+
+El valor de `AGENT_TOKEN` debe coincidir con el campo `agent_token` del equipo registrado en el panel de InfraWatch.
+
+El archivo `.env` no debe subirse al repositorio.
 
 ---
 
