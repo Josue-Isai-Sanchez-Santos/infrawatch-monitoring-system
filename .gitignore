@@ -1,4 +1,5 @@
-# Python
+# Agent environment
+agent/.env
 agent/venv/
 agent/__pycache__/
 *.pyc
@@ -14,9 +15,11 @@ backend/node_modules/
 backend/public/build/
 backend/storage/*.key
 backend/storage/logs/*.log
+backend/.env
 
 # OS / IDE
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
