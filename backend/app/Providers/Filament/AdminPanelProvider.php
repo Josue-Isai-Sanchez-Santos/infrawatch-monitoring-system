@@ -40,6 +40,10 @@ class AdminPanelProvider extends PanelProvider
     \App\Filament\Widgets\InfraStatsOverview::class,
     \App\Filament\Widgets\LatestOpenAlerts::class,
     \App\Filament\Widgets\LatestServiceChecks::class,
+    \App\Filament\Widgets\CpuUsageChart::class,
+    \App\Filament\Widgets\RamUsageChart::class,
+    \App\Filament\Widgets\DiskUsageChart::class,
+    \App\Filament\Widgets\LatestHostMetrics::class,
             ])
             ->middleware([
                 EncryptCookies::class,
