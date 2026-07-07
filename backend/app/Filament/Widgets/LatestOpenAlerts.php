@@ -6,11 +6,12 @@ use App\Models\Alert;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 class LatestOpenAlerts extends BaseWidget
 {
-    protected static ?string $heading = 'Últimas alertas abiertas';
+    protected static ?string $heading = 'Últimas 10 alertas abiertas';
+
+    protected static ?int $sort = 10;
 
     protected int | string | array $columnSpan = 'full';
 
@@ -37,17 +38,23 @@ class LatestOpenAlerts extends BaseWidget
 
                 Tables\Columns\TextColumn::make('title')
                     ->label('Título')
-                    ->searchable(),
+                    ->searchable()
+                    ->limit(40),
 
                 Tables\Columns\TextColumn::make('host.name')
-                    ->label('Equipo'),
+                    ->label('Equipo')
+                    ->placeholder('N/A'),
 
                 Tables\Columns\TextColumn::make('service.name')
-                    ->label('Servicio'),
+                    ->label('Servicio')
+                    ->placeholder('N/A'),
 
                 Tables\Columns\TextColumn::make('triggered_at')
                     ->label('Activada')
-                    ->dateTime('d/m/Y H:i:s'),
-            ]);
+                    ->dateTime('d/m/Y H:i:s')
+                    ->sortable(),
+            ])
+            ->emptyStateHeading('No hay alertas abiertas')
+            ->emptyStateDescription('No existen alertas pendientes por revisar.');
     }
 }

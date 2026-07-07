@@ -37,12 +37,16 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-    \App\Filament\Widgets\InfraStatsOverview::class,
-    \App\Filament\Widgets\LatestOpenAlerts::class,
-    \App\Filament\Widgets\LatestServiceChecks::class,
+    \App\Filament\Widgets\InfrastructureStatusOverview::class,
+
     \App\Filament\Widgets\CpuUsageChart::class,
     \App\Filament\Widgets\RamUsageChart::class,
     \App\Filament\Widgets\DiskUsageChart::class,
+
+    \App\Filament\Widgets\TopResourceUsageHosts::class,
+    \App\Filament\Widgets\OfflineServicesTable::class,
+    \App\Filament\Widgets\LatestOpenAlerts::class,
+    \App\Filament\Widgets\LatestServiceChecks::class,
     \App\Filament\Widgets\LatestHostMetrics::class,
             ])
             ->middleware([

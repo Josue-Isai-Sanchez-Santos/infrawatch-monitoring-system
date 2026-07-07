@@ -9,7 +9,9 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class LatestServiceChecks extends BaseWidget
 {
-    protected static ?string $heading = 'Últimos chequeos de servicios';
+    protected static ?string $heading = 'Últimos 10 chequeos TCP';
+
+    protected static ?int $sort = 11;
 
     protected int | string | array $columnSpan = 'full';
 
@@ -24,10 +26,12 @@ class LatestServiceChecks extends BaseWidget
             )
             ->columns([
                 Tables\Columns\TextColumn::make('service.host.name')
-                    ->label('Equipo'),
+                    ->label('Equipo')
+                    ->placeholder('N/A'),
 
                 Tables\Columns\TextColumn::make('service.name')
-                    ->label('Servicio'),
+                    ->label('Servicio')
+                    ->placeholder('N/A'),
 
                 Tables\Columns\TextColumn::make('service.port')
                     ->label('Puerto'),
@@ -45,11 +49,15 @@ class LatestServiceChecks extends BaseWidget
 
                 Tables\Columns\TextColumn::make('response_time_ms')
                     ->label('Respuesta')
-                    ->suffix(' ms'),
+                    ->suffix(' ms')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('checked_at')
                     ->label('Revisado')
-                    ->dateTime('d/m/Y H:i:s'),
-            ]);
+                    ->dateTime('d/m/Y H:i:s')
+                    ->sortable(),
+            ])
+            ->emptyStateHeading('Sin chequeos registrados')
+            ->emptyStateDescription('Ejecuta el monitoreo TCP para generar registros.');
     }
 }
