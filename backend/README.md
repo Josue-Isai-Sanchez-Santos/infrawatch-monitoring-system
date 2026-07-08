@@ -15,6 +15,7 @@ Este módulo administra equipos monitoreados, servicios, métricas, alertas, his
 | PostgreSQL | Base de datos |
 | Docker | Base de datos local |
 | Composer | Dependencias PHP |
+| Telegram | Envio de Notificaciones|
 
 ---
 
@@ -25,6 +26,7 @@ Este módulo administra equipos monitoreados, servicios, métricas, alertas, his
 - Docker.
 - PostgreSQL mediante Docker Compose.
 - Node.js y NPM si se requiere compilar assets.
+- Telegram API
 
 ---
 
@@ -206,9 +208,39 @@ Endpoint:
 POST /api/agent/metrics
 ```
 
-Documentación completa:
-
 [Ver documentación de API](../docs/api.md)
+
+---
+
+## Notificaciones por Telegram
+
+El backend puede enviar notificaciones automáticas a Telegram cuando un servicio cae o vuelve a estar disponible.
+
+Variables requeridas en `.env`:
+
+```env
+TELEGRAM_ENABLED=true
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token
+TELEGRAM_CHAT_ID=your-chat-id
+```
+
+Variables de ejemplo en `.env.example`:
+
+```env
+TELEGRAM_ENABLED=false
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+```
+
+Las notificaciones se envían desde el servicio:
+
+```text
+app/Services/TelegramNotifier.php
+```
+
+El comando `monitor:services` llama este servicio cuando crea o resuelve alertas.
+
+[Ver documentación de Telegram](../docs/telegram.md)
 
 ---
 

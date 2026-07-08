@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Alert;
 use App\Models\MonitoredService;
 use App\Models\ServiceCheck;
+use App\Services\TelegramNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -24,6 +25,7 @@ class CheckMonitoredServices extends Command
         }
 
         $this->info('Checking monitored services...');
+	$telegramNotifier = app(TelegramNotifier::class);
 
         foreach ($services as $service) {
             $host = $service->host;
@@ -75,31 +77,42 @@ class CheckMonitoredServices extends Command
             ]);
 
             if ($status === 'offline') {
-                Alert::firstOrCreate(
-                    [
-                        'monitored_service_id' => $service->id,
-                        'status' => 'open',
-                        'type' => 'service_down',
-                    ],
-                    [
-                        'monitored_host_id' => $host->id,
-                        'severity' => 'critical',
-                        'title' => "Servicio caído: {$service->name}",
-                        'message' => $message,
-                        'triggered_at' => Carbon::now(),
-                    ]
-                );
-            }
+    $alert = Alert::firstOrCreate(
+        [
+            'monitored_service_id' => $service->id,
+            'status' => 'open',
+            'type' => 'service_down',
+        ],
+        [
+            'monitored_host_id' => $host->id,
+            'severity' => 'critical',
+            'title' => "Servicio caído: {$service->name}",
+            'message' => $message,
+            'triggered_at' => Carbon::now(),
+        ]
+    );
+
+    if ($alert->wasRecentlyCreated) {
+        $telegramNotifier->sendAlertCreated($alert);
+    }
+}
 
             if ($status === 'online') {
-                Alert::where('monitored_service_id', $service->id)
-                    ->where('type', 'service_down')
-                    ->where('status', 'open')
-                    ->update([
-                        'status' => 'resolved',
-                        'resolved_at' => Carbon::now(),
-                    ]);
-            }
+    $openAlerts = Alert::query()
+        ->where('monitored_service_id', $service->id)
+        ->where('type', 'service_down')
+        ->where('status', 'open')
+        ->get();
+
+    foreach ($openAlerts as $openAlert) {
+        $openAlert->update([
+            'status' => 'resolved',
+            'resolved_at' => Carbon::now(),
+        ]);
+
+        $telegramNotifier->sendAlertResolved($openAlert);
+    }
+}
         }
 
         $this->info('Service check completed.');

@@ -38,6 +38,7 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 - Dashboard con estadísticas generales.
 - Base de datos PostgreSQL.
 - Entorno local con Docker.
+- Notificaciones automáticas vía Telegram para alertas y recuperaciones.
 
 ---
 
