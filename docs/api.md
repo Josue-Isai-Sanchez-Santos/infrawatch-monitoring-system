@@ -2,7 +2,7 @@
 
 InfraWatch expone una API REST para recibir métricas enviadas por agentes externos.
 
-Actualmente la API principal permite que un agente Python envíe métricas básicas de un equipo monitoreado.
+Actualmente la API principal permite que el agente Python envíe métricas básicas de un equipo monitoreado, como CPU, RAM, disco, uptime, hostname, IP y sistema operativo.
 
 ---
 
@@ -18,7 +18,7 @@ http://127.0.0.1:8000
 
 ## Autenticación del agente
 
-El agente debe enviar un token tipo Bearer Token.
+El agente debe enviar un token tipo Bearer Token en cada petición.
 
 Header requerido:
 
@@ -27,7 +27,9 @@ Authorization: Bearer AGENT_TOKEN
 Accept: application/json
 ```
 
-El valor de `AGENT_TOKEN` debe coincidir con el campo `agent_token` registrado en el equipo dentro del panel de administración.
+El valor de `AGENT_TOKEN` debe coincidir con el campo `agent_token` registrado en el equipo dentro del panel administrativo de InfraWatch.
+
+Si el token no existe o no coincide con ningún equipo registrado, la API rechaza la petición.
 
 ---
 
@@ -231,7 +233,7 @@ Cuando el backend recibe una petición:
 
 ---
 
-## Tabla relacionada: monitored_hosts
+## Tabla relacionada: `monitored_hosts`
 
 El token se valida contra:
 
@@ -241,9 +243,17 @@ monitored_hosts.agent_token
 
 El equipo debe estar registrado previamente desde el panel administrativo.
 
+Campos actualizados por la API:
+
+- `hostname`
+- `ip_address`
+- `operating_system`
+- `status`
+- `last_seen_at`
+
 ---
 
-## Tabla relacionada: host_metrics
+## Tabla relacionada: `host_metrics`
 
 Cada petición correcta crea un registro en:
 
@@ -262,6 +272,32 @@ Campos guardados:
 
 ---
 
+## Relación con el agente Python
+
+El agente Python utiliza esta API para enviar métricas al backend.
+
+Configuración esperada en `agent/.env`:
+
+```env
+API_URL=http://127.0.0.1:8000/api/agent/metrics
+AGENT_TOKEN=your-agent-token-here
+INTERVAL_SECONDS=60
+```
+
+El agente puede ejecutarse una sola vez:
+
+```bash
+python agent.py --once
+```
+
+O de forma continua:
+
+```bash
+python agent.py --interval 60
+```
+
+---
+
 ## Consideraciones de seguridad
 
 - No subir tokens reales al repositorio.
@@ -270,6 +306,7 @@ Campos guardados:
 - Generar tokens largos y difíciles de adivinar.
 - Cambiar tokens si se sospecha exposición.
 - Validar origen de agentes en versiones futuras.
+- Evitar reutilizar el mismo token para varios equipos.
 
 ---
 

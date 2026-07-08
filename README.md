@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/Filament-Admin%20Panel-orange?style=for-the-badge" />
   <img src="https://img.shields.io/badge/PostgreSQL-Database-blue?style=for-the-badge&logo=postgresql" />
   <img src="https://img.shields.io/badge/Python-Agent-green?style=for-the-badge&logo=python" />
+  <img src="https://img.shields.io/badge/Telegram-Alerts-blue?style=for-the-badge&logo=telegram" />
 </p>
 
 ---
@@ -17,7 +18,7 @@
 
 **InfraWatch** es un sistema web de monitoreo de infraestructura TI desarrollado con **Laravel**, **Filament**, **PostgreSQL** y un **agente Python**.
 
-El sistema permite registrar equipos, monitorear servicios de red por puerto TCP, recolectar métricas del sistema y visualizar alertas desde un panel administrativo.
+El sistema permite registrar equipos, monitorear servicios de red mediante puertos TCP, recolectar métricas del sistema, visualizar gráficas, consultar alertas y recibir notificaciones automáticas vía Telegram.
 
 Está pensado como una solución base para supervisar servidores, estaciones de trabajo, servicios internos y métricas básicas como CPU, RAM, disco y uptime.
 
@@ -27,18 +28,24 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 
 - Panel administrativo con Filament.
 - Registro de equipos monitoreados.
-- Registro de servicios asociados a cada equipo.
+- Registro de servicios TCP asociados a cada equipo.
 - Monitoreo de puertos TCP mediante comando Artisan.
 - Ejecución automática mediante Laravel Scheduler.
 - Historial de chequeos de servicios.
 - Generación de alertas cuando un servicio deja de responder.
 - Resolución automática de alertas cuando el servicio vuelve a estar disponible.
+- Notificaciones automáticas vía Telegram para alertas y recuperaciones.
 - Agente Python para recolectar métricas del sistema.
+- Configuración segura del agente mediante archivo `.env`.
 - API REST para recepción de métricas.
 - Dashboard con estadísticas generales.
+- Dashboard con gráficas de CPU, RAM y disco.
+- Tabla de últimas métricas recibidas.
+- Tabla de servicios caídos.
+- Tabla de hosts con mayor uso de recursos.
+- Panel de control para ejecutar monitoreo TCP y agente Python desde Filament.
 - Base de datos PostgreSQL.
 - Entorno local con Docker.
-- Notificaciones automáticas vía Telegram para alertas y recuperaciones.
 
 ---
 
@@ -52,7 +59,9 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 | Contenedores | Docker |
 | Agente | Python |
 | Métricas del sistema | psutil |
+| Variables de entorno del agente | python-dotenv |
 | Comunicación HTTP | requests |
+| Notificaciones | Telegram Bot API |
 | Control de versiones | Git / GitHub |
 
 ---
@@ -85,13 +94,21 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 +-------------------------+
 | Dashboard Filament      |
 | Estado general          |
-| Alertas e historial     |
+| Gráficas / Alertas      |
++-------------------------+
+            |
+            v
++-------------------------+
+| Telegram                |
+| Alertas y recuperación  |
 +-------------------------+
 ```
 
-Documentación completa de arquitectura:
+Documentación completa:
 
-[Ver arquitectura](docs/architecture.md)
+- [Arquitectura](docs/architecture.md)
+- [API](docs/api.md)
+- [Notificaciones por Telegram](docs/telegram.md)
 
 ---
 
@@ -121,6 +138,12 @@ Documentación completa de arquitectura:
 
 ![Alerts](docs/screenshots/alerts.png)
 
+### Alertas via Telegram
+
+![Alerts](docs/screenshots/telegram.jpg)
+
+> Si alguna imagen no aparece en GitHub, verificar que exista dentro de `docs/screenshots/` y que el nombre del archivo coincida exactamente.
+
 ---
 
 ## Estructura del proyecto
@@ -129,19 +152,24 @@ Documentación completa de arquitectura:
 infrawatch-monitoring-system/
 ├── backend/
 │   ├── app/
+│   ├── config/
 │   ├── database/
 │   ├── routes/
+│   ├── resources/
 │   ├── docker-compose.yml
+│   ├── .env.example
 │   └── README.md
 │
 ├── agent/
 │   ├── agent.py
 │   ├── requirements.txt
+│   ├── .env.example
 │   └── README.md
 │
 ├── docs/
 │   ├── architecture.md
 │   ├── api.md
+│   ├── telegram.md
 │   └── screenshots/
 │
 ├── .gitignore
@@ -160,6 +188,8 @@ infrawatch-monitoring-system/
 | Host Metrics | Métricas enviadas por el agente Python. |
 | Alerts | Alertas generadas por fallos detectados. |
 | Dashboard | Vista general del estado de la infraestructura. |
+| Monitoring Control | Panel para ejecutar monitoreo TCP y agente desde Filament. |
+| Telegram Notifications | Envío de alertas y recuperaciones vía Telegram. |
 
 ---
 
@@ -200,14 +230,34 @@ cd agent
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python agent.py
+cp .env.example .env
+```
+
+Editar `agent/.env`:
+
+```env
+API_URL=http://127.0.0.1:8000/api/agent/metrics
+AGENT_TOKEN=your-agent-token-here
+INTERVAL_SECONDS=60
+```
+
+Ejecutar el agente una sola vez:
+
+```bash
+python agent.py --once
+```
+
+Ejecutar el agente de forma continua:
+
+```bash
+python agent.py --interval 60
 ```
 
 ---
 
 ## Comandos principales
 
-### Ejecutar monitoreo manual de servicios
+### Ejecutar monitoreo TCP manual
 
 ```bash
 php artisan monitor:services
@@ -255,9 +305,27 @@ Documentación completa:
 
 ---
 
+## Notificaciones por Telegram
+
+InfraWatch puede enviar notificaciones automáticas a Telegram cuando un servicio cae o vuelve a estar disponible.
+
+Variables requeridas en `backend/.env`:
+
+```env
+TELEGRAM_ENABLED=true
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token
+TELEGRAM_CHAT_ID=your-chat-id
+```
+
+Documentación completa:
+
+[Ver documentación de Telegram](docs/telegram.md)
+
+---
+
 ## Estado actual
 
-Versión actual: **V1 en desarrollo**
+Versión actual: **V1 funcional en desarrollo**
 
 Funcionalidades implementadas:
 
@@ -269,18 +337,25 @@ Funcionalidades implementadas:
 - Comando de monitoreo TCP.
 - Scheduler de Laravel.
 - Historial de chequeos.
-- Dashboard con estadísticas.
+- Dashboard con estadísticas generales.
+- Dashboard con gráficas de CPU, RAM y disco.
+- Tabla de últimas métricas recibidas.
+- Tabla de hosts con mayor uso de recursos.
+- Tabla de servicios caídos.
 - Alertas básicas.
+- Resolución automática de alertas.
+- Notificaciones vía Telegram.
 - Agente Python para métricas del sistema.
+- Agente configurable mediante `.env`.
 - API para recepción de métricas.
+- Panel de control para ejecutar procesos manuales y automáticos.
 
 ---
 
 ## Próximas mejoras
 
-- Gráficas históricas de CPU, RAM y disco.
+- Botones para detener procesos automáticos desde el panel.
 - Notificaciones por correo electrónico.
-- Notificaciones por Telegram.
 - Roles y permisos.
 - Reportes PDF.
 - Limpieza automática de métricas antiguas.
@@ -288,6 +363,7 @@ Funcionalidades implementadas:
 - Tests automatizados.
 - GitHub Actions.
 - Deploy en VPS o servidor local.
+- Instalación del agente como servicio del sistema.
 
 ---
 
@@ -295,13 +371,19 @@ Funcionalidades implementadas:
 
 El archivo `.env` no debe subirse al repositorio.
 
-Solo deben subirse archivos de ejemplo como:
+Archivos que sí pueden subirse:
 
 ```text
 .env.example
 ```
 
-El token real del agente debe mantenerse privado.
+Credenciales que deben mantenerse privadas:
+
+- `APP_KEY`
+- `DB_PASSWORD` si se usa una contraseña real
+- `AGENT_TOKEN`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
 
 ---
 

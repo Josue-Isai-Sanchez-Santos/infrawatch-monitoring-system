@@ -2,7 +2,7 @@
 
 Backend principal de InfraWatch desarrollado con **Laravel**, **Filament** y **PostgreSQL**.
 
-Este módulo administra equipos monitoreados, servicios, métricas, alertas, historial de chequeos y la API para agentes externos.
+Este módulo administra equipos monitoreados, servicios, métricas, alertas, historial de chequeos, dashboard, API para agentes externos y notificaciones vía Telegram.
 
 ---
 
@@ -15,7 +15,9 @@ Este módulo administra equipos monitoreados, servicios, métricas, alertas, his
 | PostgreSQL | Base de datos |
 | Docker | Base de datos local |
 | Composer | Dependencias PHP |
-| Telegram | Envio de Notificaciones|
+| Telegram Bot API | Envío de notificaciones |
+| Laravel Scheduler | Ejecución automática de monitoreo |
+| Artisan Commands | Comando de monitoreo TCP |
 
 ---
 
@@ -26,7 +28,7 @@ Este módulo administra equipos monitoreados, servicios, métricas, alertas, his
 - Docker.
 - PostgreSQL mediante Docker Compose.
 - Node.js y NPM si se requiere compilar assets.
-- Telegram API
+- Bot de Telegram si se desean notificaciones externas.
 
 ---
 
@@ -135,12 +137,56 @@ Ruta local:
 
 Módulos disponibles:
 
+- Dashboard
+- Monitoring Control
 - Monitored Hosts
 - Monitored Services
 - Host Metrics
 - Service Checks
 - Alerts
-- Dashboard
+
+---
+
+## Dashboard
+
+El dashboard de InfraWatch muestra información general del estado de la infraestructura.
+
+Widgets principales:
+
+- Salud general de servicios.
+- Equipos monitoreados.
+- Servicios monitoreados.
+- Alertas abiertas.
+- Gráfica de uso de CPU.
+- Gráfica de uso de RAM.
+- Gráfica de uso de disco.
+- Hosts con mayor uso de recursos.
+- Servicios caídos.
+- Últimas alertas abiertas.
+- Últimos chequeos TCP.
+- Últimas métricas recibidas.
+
+---
+
+## Panel de control de monitoreo
+
+InfraWatch incluye una página de Filament para ejecutar procesos desde el panel administrativo.
+
+Acciones disponibles:
+
+1. Iniciar lectura TCP automática.
+2. Ejecutar lectura TCP manual de una sola vez.
+3. Iniciar agente automático.
+4. Ejecutar agente manualmente una sola vez.
+
+Esta sección está pensada para entorno local o de desarrollo.
+
+En producción se recomienda usar:
+
+- cron
+- systemd
+- supervisor
+- Docker services
 
 ---
 
@@ -162,7 +208,9 @@ El comando realiza lo siguiente:
 6. Actualiza el estado del servicio.
 7. Actualiza el estado del equipo.
 8. Genera una alerta si el servicio no responde.
-9. Resuelve alertas abiertas si el servicio vuelve a responder.
+9. Envía notificación por Telegram si se crea una alerta nueva.
+10. Resuelve alertas abiertas si el servicio vuelve a responder.
+11. Envía notificación de recuperación por Telegram.
 
 ---
 
@@ -208,6 +256,8 @@ Endpoint:
 POST /api/agent/metrics
 ```
 
+Documentación completa:
+
 [Ver documentación de API](../docs/api.md)
 
 ---
@@ -240,6 +290,8 @@ app/Services/TelegramNotifier.php
 
 El comando `monitor:services` llama este servicio cuando crea o resuelve alertas.
 
+Documentación completa:
+
 [Ver documentación de Telegram](../docs/telegram.md)
 
 ---
@@ -253,6 +305,20 @@ El comando `monitor:services` llama este servicio cuando crea o resuelve alertas
 | `ServiceCheck` | Registro histórico de revisión de un servicio. |
 | `HostMetric` | Métrica enviada por un agente. |
 | `Alert` | Alerta generada por fallas o eventos importantes. |
+
+---
+
+## Archivos importantes
+
+| Archivo | Descripción |
+|---|---|
+| `app/Console/Commands/CheckMonitoredServices.php` | Comando de monitoreo TCP. |
+| `app/Services/TelegramNotifier.php` | Servicio para notificaciones por Telegram. |
+| `app/Filament/Pages/MonitoringControl.php` | Página de control manual y automático. |
+| `app/Filament/Widgets/` | Widgets del dashboard. |
+| `routes/api.php` | Ruta para recepción de métricas del agente. |
+| `routes/console.php` | Programación del scheduler. |
+| `config/services.php` | Configuración de servicios externos. |
 
 ---
 
@@ -282,6 +348,12 @@ Recrear base de datos en desarrollo:
 php artisan migrate:fresh
 ```
 
+Ejecutar monitoreo TCP:
+
+```bash
+php artisan monitor:services
+```
+
 ---
 
 ## Seguridad
@@ -290,4 +362,12 @@ No subir el archivo `.env`.
 
 El archivo `.env.example` sí puede subirse porque solo contiene valores de ejemplo.
 
-El token real del agente debe mantenerse privado.
+Credenciales que deben mantenerse privadas:
+
+- `APP_KEY`
+- `DB_PASSWORD` si se usa una contraseña real.
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- Tokens de agentes registrados en `monitored_hosts`.
+
+Si alguna credencial se expone, debe regenerarse o cambiarse inmediatamente.

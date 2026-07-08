@@ -25,6 +25,7 @@ Este módulo recolecta métricas básicas del sistema operativo y las envía al 
 | Python | Lenguaje del agente |
 | psutil | Lectura de métricas del sistema |
 | requests | Envío HTTP hacia el backend |
+| python-dotenv | Lectura de variables desde `.env` |
 
 ---
 
@@ -54,23 +55,24 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
----
-
-## Configuración
-
-El agente utiliza un archivo `.env` local para cargar la URL de la API y el token del equipo monitoreado.
-
-Crear el archivo `.env`:
+### 5. Crear archivo de configuración
 
 ```bash
 cp .env.example .env
 ```
+
+---
+
+## Configuración
+
+El agente utiliza un archivo `.env` local para cargar la URL de la API, el token del equipo monitoreado y el intervalo de ejecución.
 
 Ejemplo de `.env`:
 
 ```env
 API_URL=http://127.0.0.1:8000/api/agent/metrics
 AGENT_TOKEN=your-agent-token-here
+INTERVAL_SECONDS=60
 ```
 
 El valor de `AGENT_TOKEN` debe coincidir con el campo `agent_token` del equipo registrado en el panel de InfraWatch.
@@ -81,16 +83,32 @@ El archivo `.env` no debe subirse al repositorio.
 
 ## Ejecución
 
-Con el backend encendido:
+### Ejecutar una sola vez
+
+```bash
+python agent.py --once
+```
+
+### Ejecutar automáticamente cada 60 segundos
+
+```bash
+python agent.py --interval 60
+```
+
+### Ejecutar usando el modo por defecto
 
 ```bash
 python agent.py
 ```
 
-Respuesta esperada:
+Si no se especifica ningún argumento, el agente ejecuta un envío único.
+
+---
+
+## Respuesta esperada
 
 ```text
-Métricas enviadas correctamente
+Métricas enviadas correctamente:
 ```
 
 Si el token no existe o no coincide, el backend responderá con error de autorización.
@@ -102,6 +120,8 @@ Si el token no existe o no coincide, el backend responderá con error de autoriz
 ```text
 Agente Python
     ↓
+Lee configuración desde .env
+    ↓
 Recolecta CPU, RAM, disco y uptime
     ↓
 Envía datos por HTTP POST
@@ -110,7 +130,7 @@ Backend Laravel valida el token
     ↓
 Backend guarda las métricas
     ↓
-Filament muestra los datos en Host Metrics
+Filament muestra los datos en Host Metrics y Dashboard
 ```
 
 ---
@@ -131,21 +151,41 @@ pip install -r requirements.txt
 
 ---
 
+## Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `API_URL` | URL del endpoint de métricas del backend. |
+| `AGENT_TOKEN` | Token asignado al equipo monitoreado. |
+| `INTERVAL_SECONDS` | Intervalo por defecto para ejecución automática. |
+
+---
+
 ## Seguridad
 
-No se recomienda dejar tokens reales escritos directamente en el código en entornos productivos.
+No dejar tokens reales escritos directamente en el código.
 
-Para una versión más segura se recomienda usar variables de entorno o un archivo `.env` local no rastreado por Git.
+No subir el archivo:
 
-El archivo `.env` debe permanecer fuera del repositorio.
+```text
+.env
+```
+
+Sí se puede subir:
+
+```text
+.env.example
+```
+
+Si el token se expone, debe cambiarse desde el panel de InfraWatch y actualizarse en el `.env` local del agente.
 
 ---
 
 ## Mejoras futuras
 
-- Lectura de configuración desde `.env`.
-- Ejecución continua cada cierto intervalo.
 - Instalación como servicio de sistema.
 - Envío de métricas de red.
 - Envío de temperatura del sistema si el hardware lo permite.
-- Logs locales del agente.
+- Logs locales más detallados.
+- Reintentos configurables.
+- Identificador único del agente.

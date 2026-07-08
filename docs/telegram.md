@@ -2,7 +2,7 @@
 
 InfraWatch puede enviar notificaciones automáticas a Telegram cuando un servicio monitoreado deja de responder o vuelve a estar disponible.
 
-Esta integración permite recibir avisos en tiempo real sin depender únicamente del panel administrativo.
+Esta integración permite recibir avisos externos sin depender únicamente del panel administrativo.
 
 ---
 
@@ -18,6 +18,8 @@ El objetivo de esta integración es enviar mensajes automáticos cuando ocurra a
 ---
 
 ## Flujo general
+
+Cuando un servicio falla:
 
 ```text
 Servicio monitoreado
@@ -87,7 +89,13 @@ Este token debe mantenerse privado.
 
 ## Obtener el chat ID
 
-Primero se debe enviar un mensaje al bot desde Telegram, por ejemplo:
+Primero se debe iniciar conversación con el bot en Telegram.
+
+Pasos:
+
+1. Abrir el bot creado.
+2. Presionar `Start`.
+3. Enviar un mensaje, por ejemplo:
 
 ```text
 hola
@@ -104,11 +112,37 @@ curl "https://api.telegram.org/bot${TOKEN}/getUpdates"
 La respuesta debe incluir una sección parecida a esta:
 
 ```json
-{"ok":true,"result":[{"update_id":xxxxxxxx,
-"message":{"message_id":x,"from":{"id":xxxxxxxxx,"is_bot":false,"first_name":"Nombre_Usuario_Telegram","username":"@Nombre_Usuario_Telegram","language_code":"es"},"chat":{"id":xxxxxxxxx,"first_name":"Nombre_Usuario_Telegram","username":"Nombre_Usuario_Telegram","type":"private"},"date":xxxxxxxxxx,"text":"Mensaje enviado por el chat del bot"}}]}
+{
+  "ok": true,
+  "result": [
+    {
+      "update_id": 123456789,
+      "message": {
+        "message_id": 1,
+        "from": {
+          "id": 123456789,
+          "is_bot": false,
+          "first_name": "Nombre"
+        },
+        "chat": {
+          "id": 123456789,
+          "first_name": "Nombre",
+          "type": "private"
+        },
+        "text": "hola"
+      }
+    }
+  ]
+}
 ```
 
-El valor de `id` despues de el valor `chat` es el `TELEGRAM_CHAT_ID`.
+El valor de `chat.id` es el `TELEGRAM_CHAT_ID`.
+
+Ejemplo:
+
+```env
+TELEGRAM_CHAT_ID=123456789
+```
 
 ---
 
@@ -153,6 +187,12 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 ```
 
+Después de modificar `.env`, limpiar caché:
+
+```bash
+php artisan optimize:clear
+```
+
 ---
 
 ## Configuración en Laravel
@@ -171,7 +211,7 @@ En `config/services.php` se debe agregar:
 
 ## Servicio `TelegramNotifier`
 
-El servicio `TelegramNotifier` se encarga de centralizar el envío de mensajes.
+El servicio `TelegramNotifier` centraliza el envío de mensajes.
 
 Responsabilidades:
 
@@ -239,6 +279,15 @@ Formato correcto:
 curl "https://api.telegram.org/bot${TOKEN}/getUpdates"
 ```
 
+Errores típicos:
+
+```text
+Falta la palabra bot antes del token.
+Hay un espacio entre bot y el token.
+Se agregó una diagonal extra después de bot.
+El token está incompleto.
+```
+
 ---
 
 ### `{"ok":true,"result":[]}`
@@ -251,6 +300,18 @@ Solución:
 2. Presionar `Start`.
 3. Enviar un mensaje como `hola`.
 4. Ejecutar otra vez `getUpdates`.
+
+Si sigue vacío, limpiar webhook:
+
+```bash
+curl "https://api.telegram.org/bot${TOKEN}/deleteWebhook"
+```
+
+Luego enviar otro mensaje al bot y volver a ejecutar:
+
+```bash
+curl "https://api.telegram.org/bot${TOKEN}/getUpdates"
+```
 
 ---
 
