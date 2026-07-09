@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\DashboardUpdated;
 use App\Models\Alert;
 use App\Models\MonitoredService;
 use App\Models\ServiceCheck;
@@ -21,17 +22,19 @@ class CheckMonitoredServices extends Command
 
         if ($services->isEmpty()) {
             $this->warn('No monitored services found.');
+
             return self::SUCCESS;
         }
 
         $this->info('Checking monitored services...');
-	$telegramNotifier = app(TelegramNotifier::class);
+        $telegramNotifier = app(TelegramNotifier::class);
 
         foreach ($services as $service) {
             $host = $service->host;
 
             if (! $host) {
                 $this->warn("Service {$service->name} has no host assigned.");
+
                 continue;
             }
 
@@ -77,45 +80,50 @@ class CheckMonitoredServices extends Command
             ]);
 
             if ($status === 'offline') {
-    $alert = Alert::firstOrCreate(
-        [
-            'monitored_service_id' => $service->id,
-            'status' => 'open',
-            'type' => 'service_down',
-        ],
-        [
-            'monitored_host_id' => $host->id,
-            'severity' => 'critical',
-            'title' => "Servicio caído: {$service->name}",
-            'message' => $message,
-            'triggered_at' => Carbon::now(),
-        ]
-    );
+                $alert = Alert::firstOrCreate(
+                    [
+                        'monitored_service_id' => $service->id,
+                        'status' => 'open',
+                        'type' => 'service_down',
+                    ],
+                    [
+                        'monitored_host_id' => $host->id,
+                        'severity' => 'critical',
+                        'title' => "Servicio caído: {$service->name}",
+                        'message' => $message,
+                        'triggered_at' => Carbon::now(),
+                    ]
+                );
 
-    if ($alert->wasRecentlyCreated) {
-        $telegramNotifier->sendAlertCreated($alert);
-    }
-}
+                if ($alert->wasRecentlyCreated) {
+                    $telegramNotifier->sendAlertCreated($alert);
+                }
+            }
 
             if ($status === 'online') {
-    $openAlerts = Alert::query()
-        ->where('monitored_service_id', $service->id)
-        ->where('type', 'service_down')
-        ->where('status', 'open')
-        ->get();
+                $openAlerts = Alert::query()
+                    ->where('monitored_service_id', $service->id)
+                    ->where('type', 'service_down')
+                    ->where('status', 'open')
+                    ->get();
 
-    foreach ($openAlerts as $openAlert) {
-        $openAlert->update([
-            'status' => 'resolved',
-            'resolved_at' => Carbon::now(),
-        ]);
+                foreach ($openAlerts as $openAlert) {
+                    $openAlert->update([
+                        'status' => 'resolved',
+                        'resolved_at' => Carbon::now(),
+                    ]);
 
-        $telegramNotifier->sendAlertResolved($openAlert);
-    }
-}
+                    $telegramNotifier->sendAlertResolved($openAlert);
+                }
+            }
         }
 
         $this->info('Service check completed.');
+
+        DashboardUpdated::dispatch(
+            type: 'services_checked',
+            message: 'Chequeo TCP finalizado.'
+        );
 
         return self::SUCCESS;
     }

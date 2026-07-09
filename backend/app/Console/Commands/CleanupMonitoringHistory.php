@@ -24,6 +24,7 @@ class CleanupMonitoringHistory extends Command
 
         if ($days <= 0) {
             $this->error('El número de días debe ser mayor a 0.');
+
             return self::FAILURE;
         }
 
@@ -31,7 +32,7 @@ class CleanupMonitoringHistory extends Command
 
         $this->info('Iniciando limpieza de historial de monitoreo...');
         $this->line("Conservando últimos {$days} días.");
-        $this->line('Fecha límite: ' . $cutoffDate->format('Y-m-d H:i:s'));
+        $this->line('Fecha límite: '.$cutoffDate->format('Y-m-d H:i:s'));
 
         $oldHostMetricsQuery = HostMetric::query()
             ->where('recorded_at', '<', $cutoffDate);
@@ -55,17 +56,20 @@ class CleanupMonitoringHistory extends Command
 
         if ($dryRun) {
             $this->warn('Modo dry-run activo. No se eliminó ningún registro.');
+
             return self::SUCCESS;
         }
 
         if ($oldHostMetricsCount === 0 && $oldServiceChecksCount === 0) {
             $this->info('No hay registros antiguos para eliminar.');
+
             return self::SUCCESS;
         }
 
         if (! $force) {
             if (! $this->confirm('¿Deseas eliminar estos registros antiguos?', true)) {
                 $this->warn('Limpieza cancelada.');
+
                 return self::SUCCESS;
             }
         }

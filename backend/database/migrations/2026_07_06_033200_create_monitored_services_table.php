@@ -10,23 +10,23 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::create('monitored_services', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('monitored_host_id')
-            ->constrained('monitored_hosts')
-            ->cascadeOnDelete();
+    {
+        Schema::create('monitored_services', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('monitored_host_id')
+                ->constrained('monitored_hosts')
+                ->cascadeOnDelete();
 
-        $table->string('name');
-        $table->integer('port');
-        $table->string('protocol')->default('tcp');
-        $table->string('status')->default('unknown');
-        $table->timestamp('last_checked_at')->nullable();
-        $table->timestamps();
+            $table->string('name');
+            $table->integer('port');
+            $table->string('protocol')->default('tcp');
+            $table->string('status')->default('unknown');
+            $table->timestamp('last_checked_at')->nullable();
+            $table->timestamps();
 
-        $table->unique(['monitored_host_id', 'port', 'protocol']);
-    });
-}
+            $table->unique(['monitored_host_id', 'port', 'protocol']);
+        });
+    }
 
     /**
      * Reverse the migrations.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\DashboardUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\HostMetric;
 use App\Models\MonitoredHost;
@@ -55,6 +56,11 @@ class AgentMetricController extends Controller
             'uptime_seconds' => $validated['uptime_seconds'] ?? null,
             'recorded_at' => Carbon::now(),
         ]);
+
+        DashboardUpdated::dispatch(
+            type: 'host_metric_created',
+            message: 'Nueva métrica recibida desde el agente.'
+        );
 
         return response()->json([
             'message' => 'Metrics stored successfully.',

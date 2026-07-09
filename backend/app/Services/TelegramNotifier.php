@@ -20,16 +20,16 @@ class TelegramNotifier
         $service = $alert->service;
 
         $message = implode("\n", [
-            "🚨 InfraWatch Alert",
-            "",
-            "Severidad: " . strtoupper($alert->severity),
-            "Equipo: " . ($host?->name ?? 'N/A'),
-            "Servicio: " . ($service?->name ?? 'N/A'),
-            "IP: " . ($host?->ip_address ?? 'N/A'),
-            "Puerto: " . ($service?->port ?? 'N/A'),
-            "",
+            '🚨 InfraWatch Alert',
+            '',
+            'Severidad: '.strtoupper($alert->severity),
+            'Equipo: '.($host?->name ?? 'N/A'),
+            'Servicio: '.($service?->name ?? 'N/A'),
+            'IP: '.($host?->ip_address ?? 'N/A'),
+            'Puerto: '.($service?->port ?? 'N/A'),
+            '',
             $alert->title,
-            "",
+            '',
             $alert->message ?? 'Sin mensaje adicional.',
         ]);
 
@@ -48,14 +48,14 @@ class TelegramNotifier
         $service = $alert->service;
 
         $message = implode("\n", [
-            "✅ InfraWatch Recovery",
-            "",
-            "Equipo: " . ($host?->name ?? 'N/A'),
-            "Servicio: " . ($service?->name ?? 'N/A'),
-            "IP: " . ($host?->ip_address ?? 'N/A'),
-            "Puerto: " . ($service?->port ?? 'N/A'),
-            "",
-            "El servicio volvió a estar disponible.",
+            '✅ InfraWatch Recovery',
+            '',
+            'Equipo: '.($host?->name ?? 'N/A'),
+            'Servicio: '.($service?->name ?? 'N/A'),
+            'IP: '.($host?->ip_address ?? 'N/A'),
+            'Puerto: '.($service?->port ?? 'N/A'),
+            '',
+            'El servicio volvió a estar disponible.',
         ]);
 
         $this->sendMessage($message);
@@ -68,6 +68,7 @@ class TelegramNotifier
 
         if (! $botToken || ! $chatId) {
             Log::warning('Telegram notification skipped: missing bot token or chat id.');
+
             return;
         }
 

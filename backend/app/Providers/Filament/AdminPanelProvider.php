@@ -2,6 +2,15 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\CpuUsageChart;
+use App\Filament\Widgets\DiskUsageChart;
+use App\Filament\Widgets\InfrastructureStatusOverview;
+use App\Filament\Widgets\LatestHostMetrics;
+use App\Filament\Widgets\LatestOpenAlerts;
+use App\Filament\Widgets\LatestServiceChecks;
+use App\Filament\Widgets\OfflineServicesTable;
+use App\Filament\Widgets\RamUsageChart;
+use App\Filament\Widgets\TopResourceUsageHosts;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -10,12 +19,13 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -37,18 +47,23 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-    \App\Filament\Widgets\InfrastructureStatusOverview::class,
+                InfrastructureStatusOverview::class,
 
-    \App\Filament\Widgets\CpuUsageChart::class,
-    \App\Filament\Widgets\RamUsageChart::class,
-    \App\Filament\Widgets\DiskUsageChart::class,
+                CpuUsageChart::class,
+                RamUsageChart::class,
+                DiskUsageChart::class,
 
-    \App\Filament\Widgets\TopResourceUsageHosts::class,
-    \App\Filament\Widgets\OfflineServicesTable::class,
-    \App\Filament\Widgets\LatestOpenAlerts::class,
-    \App\Filament\Widgets\LatestServiceChecks::class,
-    \App\Filament\Widgets\LatestHostMetrics::class,
+                TopResourceUsageHosts::class,
+                OfflineServicesTable::class,
+                LatestOpenAlerts::class,
+                LatestServiceChecks::class,
+                LatestHostMetrics::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => Blade::render('@vite("resources/js/app.js")')
+            )
+
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

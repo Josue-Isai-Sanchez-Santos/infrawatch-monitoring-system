@@ -13,7 +13,7 @@ class OfflineServicesTable extends BaseWidget
 
     protected static ?int $sort = 9;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {

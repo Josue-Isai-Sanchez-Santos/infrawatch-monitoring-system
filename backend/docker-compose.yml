@@ -24,6 +24,13 @@ services:
       QUEUE_CONNECTION: sync
       TELEGRAM_ENABLED: false
       MONITORING_HISTORY_RETENTION_DAYS: 30
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: infrawatch-local
+      REVERB_APP_KEY: infrawatch-local-key
+      REVERB_APP_SECRET: infrawatch-local-secret
+      REVERB_HOST: reverb
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,6 +65,13 @@ services:
       QUEUE_CONNECTION: sync
       TELEGRAM_ENABLED: false
       MONITORING_HISTORY_RETENTION_DAYS: 30
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: infrawatch-local
+      REVERB_APP_KEY: infrawatch-local-key
+      REVERB_APP_SECRET: infrawatch-local-secret
+      REVERB_HOST: reverb
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
     depends_on:
       postgres:
         condition: service_healthy
@@ -121,6 +135,50 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+reverb:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: infrawatch_reverb
+    restart: unless-stopped
+    working_dir: /var/www/html
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: infrawatch-local
+      REVERB_APP_KEY: infrawatch-local-key
+      REVERB_APP_SECRET: infrawatch-local-secret
+      REVERB_HOST: reverb
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: 8080
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: infrawatch
+      DB_USERNAME: infrawatch_user
+      DB_PASSWORD: infrawatch_password
+      CACHE_STORE: array
+      SESSION_DRIVER: file
+      QUEUE_CONNECTION: sync
+      TELEGRAM_ENABLED: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command: >
+      sh -c "
+      composer install &&
+      php artisan reverb:start --host=0.0.0.0 --port=8080
+      "
 
 volumes:
   infrawatch_postgres_data:

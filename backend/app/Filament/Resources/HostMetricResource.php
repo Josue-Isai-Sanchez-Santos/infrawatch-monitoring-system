@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\HostMetricResource\Pages;
-use App\Filament\Resources\HostMetricResource\RelationManagers;
 use App\Models\HostMetric;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class HostMetricResource extends Resource
 {
@@ -40,43 +37,43 @@ class HostMetricResource extends Resource
     }
 
     public static function table(Table $table): Table
-{
-    return $table
-        ->columns([
-            Tables\Columns\TextColumn::make('host.name')
-                ->label('Equipo')
-                ->searchable(),
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('host.name')
+                    ->label('Equipo')
+                    ->searchable(),
 
-            Tables\Columns\TextColumn::make('cpu_usage')
-                ->label('CPU')
-                ->suffix('%')
-                ->sortable(),
+                Tables\Columns\TextColumn::make('cpu_usage')
+                    ->label('CPU')
+                    ->suffix('%')
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('ram_usage')
-                ->label('RAM')
-                ->suffix('%')
-                ->sortable(),
+                Tables\Columns\TextColumn::make('ram_usage')
+                    ->label('RAM')
+                    ->suffix('%')
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('disk_usage')
-                ->label('Disco')
-                ->suffix('%')
-                ->sortable(),
+                Tables\Columns\TextColumn::make('disk_usage')
+                    ->label('Disco')
+                    ->suffix('%')
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('uptime_seconds')
-                ->label('Uptime')
-                ->sortable(),
+                Tables\Columns\TextColumn::make('uptime_seconds')
+                    ->label('Uptime')
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('recorded_at')
-                ->label('Registrado')
-                ->dateTime('d/m/Y H:i:s')
-                ->sortable(),
-        ])
-        ->defaultSort('recorded_at', 'desc')
-        ->actions([
-            Tables\Actions\ViewAction::make(),
-        ])
-        ->bulkActions([]);
-}
+                Tables\Columns\TextColumn::make('recorded_at')
+                    ->label('Registrado')
+                    ->dateTime('d/m/Y H:i:s')
+                    ->sortable(),
+            ])
+            ->defaultSort('recorded_at', 'desc')
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+            ])
+            ->bulkActions([]);
+    }
 
     public static function getRelations(): array
     {
@@ -94,20 +91,18 @@ class HostMetricResource extends Resource
         ];
     }
 
-public static function canCreate(): bool
-{
-    return false;
-}
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
-public static function canEdit($record): bool
-{
-    return false;
-}
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
 
-public static function canDelete($record): bool
-{
-    return false;
+    public static function canDelete($record): bool
+    {
+        return false;
+    }
 }
-
-}
-
