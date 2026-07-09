@@ -154,7 +154,19 @@ public static function table(Table $table): Table
                 ]),
         ])
         ->actions([
-            Tables\Actions\EditAction::make(),
+            Tables\Actions\Action::make('resolve')
+    ->label('Resolver')
+    ->icon('heroicon-o-check-circle')
+    ->color('success')
+    ->requiresConfirmation()
+    ->visible(fn ($record): bool => $record->status === 'open')
+    ->action(function ($record): void {
+        $record->update([
+            'status' => 'resolved',
+            'resolved_at' => now(),
+        ]);
+    }),
+Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make(),
         ])
         ->bulkActions([

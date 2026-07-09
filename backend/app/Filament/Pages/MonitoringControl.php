@@ -7,6 +7,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Process\Process;
+use Illuminate\Support\Facades\Auth;
 
 class MonitoringControl extends Page
 {
@@ -19,6 +20,11 @@ class MonitoringControl extends Page
     protected static ?string $navigationGroup = 'InfraWatch';
 
     protected static string $view = 'filament.pages.monitoring-control';
+
+public static function canAccess(): bool
+{
+    return Auth::user()?->isAdmin() ?? false;
+}
 
     protected function getHeaderActions(): array
 {
