@@ -1,16 +1,126 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: infrawatch_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: infrawatch
+      DB_USERNAME: infrawatch_user
+      DB_PASSWORD: infrawatch_password
+      CACHE_STORE: array
+      SESSION_DRIVER: file
+      QUEUE_CONNECTION: sync
+      TELEGRAM_ENABLED: false
+      MONITORING_HISTORY_RETENTION_DAYS: 30
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+      composer install &&
+      php artisan key:generate --force &&
+      php artisan migrate --force &&
+      php artisan serve --host=0.0.0.0 --port=8000
+      "
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: infrawatch_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: infrawatch
+      DB_USERNAME: infrawatch_user
+      DB_PASSWORD: infrawatch_password
+      CACHE_STORE: array
+      SESSION_DRIVER: file
+      QUEUE_CONNECTION: sync
+      TELEGRAM_ENABLED: false
+      MONITORING_HISTORY_RETENTION_DAYS: 30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command: >
+      sh -c "
+      composer install &&
+      php artisan schedule:work
+      "
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: infrawatch_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: infrawatch
+      DB_USERNAME: infrawatch_user
+      DB_PASSWORD: infrawatch_password
+      CACHE_STORE: array
+      SESSION_DRIVER: file
+      QUEUE_CONNECTION: sync
+      TELEGRAM_ENABLED: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command: >
+      sh -c "
+      composer install &&
+      php artisan queue:work --sleep=3 --tries=3
+      "
+    profiles:
+      - queue
+
   postgres:
     image: postgres:16
     container_name: infrawatch_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-infrawatch}
-      POSTGRES_USER: ${POSTGRES_USER:-infrawatch_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_local}
+      POSTGRES_DB: infrawatch
+      POSTGRES_USER: infrawatch_user
+      POSTGRES_PASSWORD: infrawatch_password
     ports:
       - "5432:5432"
     volumes:
       - infrawatch_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infrawatch_user -d infrawatch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   infrawatch_postgres_data:
