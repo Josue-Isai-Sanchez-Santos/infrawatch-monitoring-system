@@ -1,6 +1,14 @@
 # Arquitectura de InfraWatch
 
-InfraWatch es un sistema de monitoreo de infraestructura TI compuesto por un backend Laravel, un panel administrativo con Filament, una base de datos PostgreSQL, comandos programados de monitoreo, un agente Python para métricas y notificaciones externas vía Telegram.
+InfraWatch es un sistema de monitoreo de infraestructura TI compuesto por un backend Laravel, un panel administrativo con Filament, una base de datos PostgreSQL, comandos programados de monitoreo, un agente Python, notificaciones externas vía Telegram y actualización en tiempo real mediante WebSocket.
+
+---
+
+## Estado de versión
+
+**InfraWatch V2.0 cerrada**
+
+La versión 2.0 integra monitoreo TCP, agente Python, dashboard avanzado, roles, permisos, Telegram, limpieza automática, tests, CI, Docker Compose y WebSocket con Laravel Reverb.
 
 ---
 
@@ -16,16 +24,15 @@ La arquitectura busca permitir:
 - Visualización desde un dashboard administrativo.
 - Ejecución manual y automática de procesos de monitoreo.
 - Envío de notificaciones por Telegram cuando un servicio falla o se recupera.
+- Actualización del panel administrativo en tiempo real.
+- Mantenimiento automático de historial antiguo.
+- Separación básica de permisos por rol.
 
 ---
 
 ## Componentes principales
 
----
-
 ### 1. Backend Laravel
-
-El backend es el núcleo del sistema.
 
 Responsabilidades:
 
@@ -33,11 +40,13 @@ Responsabilidades:
 - Administrar servicios monitoreados.
 - Recibir métricas del agente.
 - Ejecutar comandos de monitoreo TCP.
+- Ejecutar limpieza automática de historial.
 - Guardar historial de chequeos.
 - Guardar métricas del sistema.
 - Generar alertas.
 - Resolver alertas automáticamente.
 - Enviar notificaciones vía Telegram.
+- Disparar eventos realtime con Laravel Reverb.
 - Mostrar información en el panel administrativo.
 
 Tecnologías:
@@ -47,12 +56,11 @@ Tecnologías:
 - Filament
 - PostgreSQL
 - Telegram Bot API
+- Laravel Reverb
 
 ---
 
 ### 2. Panel administrativo Filament
-
-Filament funciona como interfaz administrativa.
 
 Módulos visibles:
 
@@ -63,14 +71,13 @@ Módulos visibles:
 - Service Checks
 - Host Metrics
 - Alerts
+- Users
 
-Desde el panel se pueden registrar equipos, registrar servicios, revisar métricas, consultar alertas, visualizar gráficas y ejecutar procesos de monitoreo.
+Desde el panel se pueden registrar equipos, registrar servicios, revisar métricas, consultar alertas, visualizar gráficas, administrar usuarios y ejecutar procesos de monitoreo.
 
 ---
 
 ### 3. Dashboard
-
-El dashboard muestra el estado general de la infraestructura.
 
 Widgets principales:
 
@@ -91,29 +98,40 @@ Widgets principales:
 
 ### 4. Monitoring Control
 
-La página `Monitoring Control` permite ejecutar procesos desde el panel administrativo.
-
 Acciones disponibles:
 
 1. Iniciar lectura TCP automática.
-2. Ejecutar lectura TCP manual de una sola vez.
-3. Iniciar agente automático.
-4. Ejecutar agente manualmente una sola vez.
+2. Detener lectura TCP automática.
+3. Ejecutar lectura TCP manual de una sola vez.
+4. Iniciar agente automático.
+5. Detener agente automático.
+6. Ejecutar agente manualmente una sola vez.
 
 Esta funcionalidad está pensada para desarrollo local y demostraciones.
 
-En producción se recomienda manejar procesos automáticos con:
+---
 
-- cron
-- systemd
-- supervisor
-- Docker services
+### 5. Roles y permisos
+
+Roles internos:
+
+- `admin`
+- `technician`
+- `observer`
+
+Permisos generales:
+
+| Rol | Permisos |
+|---|---|
+| Administrador | Acceso total al sistema. |
+| Técnico | Revisión de infraestructura, edición operativa y resolución de alertas. |
+| Observador | Solo lectura. |
+
+Los permisos se controlan mediante Policies de Laravel y validaciones en recursos de Filament.
 
 ---
 
-### 5. Base de datos PostgreSQL
-
-PostgreSQL almacena la información principal del sistema.
+### 6. Base de datos PostgreSQL
 
 Tablas principales:
 
@@ -126,15 +144,11 @@ Tablas principales:
 
 ---
 
-### 6. Comando de monitoreo de servicios
-
-El comando Artisan:
+### 7. Comando de monitoreo de servicios
 
 ```bash
 php artisan monitor:services
 ```
-
-revisa los servicios registrados mediante conexión TCP.
 
 Responsabilidades:
 
@@ -149,22 +163,41 @@ Responsabilidades:
 9. Enviar notificación por Telegram si se crea una alerta nueva.
 10. Resolver alerta si el servicio vuelve a estar disponible.
 11. Enviar notificación de recuperación por Telegram.
+12. Disparar evento realtime para actualizar el dashboard.
 
 ---
 
-### 7. Scheduler de Laravel
+### 8. Limpieza automática de historial
 
-El scheduler permite ejecutar el comando de monitoreo automáticamente.
-
-Configuración típica:
-
-```php
-use Illuminate\Support\Facades\Schedule;
-
-Schedule::command('monitor:services')->everyMinute();
+```bash
+php artisan monitor:cleanup --days=30 --force
 ```
 
-En desarrollo se ejecuta con:
+El comando elimina historial antiguo de:
+
+- `host_metrics`
+- `service_checks`
+
+Conserva:
+
+- `alerts`
+
+El objetivo es evitar crecimiento innecesario de la base de datos.
+
+---
+
+### 9. Scheduler de Laravel
+
+Configuración principal:
+
+```php
+Schedule::command('monitor:services')->everyMinute();
+
+Schedule::command('monitor:cleanup --days=30 --force')
+    ->dailyAt('03:00');
+```
+
+En desarrollo:
 
 ```bash
 php artisan schedule:work
@@ -172,9 +205,7 @@ php artisan schedule:work
 
 ---
 
-### 8. Agente Python
-
-El agente Python se ejecuta en el equipo monitoreado.
+### 10. Agente Python
 
 Responsabilidades:
 
@@ -187,24 +218,36 @@ Responsabilidades:
 - Medir uso de disco.
 - Calcular uptime.
 - Enviar métricas a la API del backend.
+- Generar logs locales.
+- Reintentar envíos fallidos.
 
-El agente puede ejecutarse una sola vez:
+Ejecución única:
 
 ```bash
 python agent.py --once
 ```
 
-O de forma continua:
+Ejecución continua:
 
 ```bash
 python agent.py --interval 60
 ```
 
+Modo verbose:
+
+```bash
+python agent.py --once --verbose
+```
+
+Modo silent:
+
+```bash
+python agent.py --interval 60 --silent
+```
+
 ---
 
-### 9. API REST
-
-El backend expone una API para recibir métricas desde agentes.
+### 11. API REST
 
 Endpoint principal:
 
@@ -212,7 +255,7 @@ Endpoint principal:
 POST /api/agent/metrics
 ```
 
-La API valida el token enviado por el agente contra el campo:
+La API valida el token enviado por el agente contra:
 
 ```text
 monitored_hosts.agent_token
@@ -224,9 +267,15 @@ Si el token es válido, guarda las métricas en:
 host_metrics
 ```
 
+Después dispara:
+
+```text
+App\Events\DashboardUpdated
+```
+
 ---
 
-### 10. Notificaciones por Telegram
+### 12. Notificaciones por Telegram
 
 InfraWatch puede enviar mensajes a Telegram cuando:
 
@@ -241,23 +290,95 @@ Archivo principal:
 app/Services/TelegramNotifier.php
 ```
 
-Configuración:
+---
+
+### 13. WebSocket con Laravel Reverb
+
+InfraWatch usa Laravel Reverb para enviar eventos en tiempo real al panel.
+
+Evento principal:
 
 ```text
-config/services.php
+App\Events\DashboardUpdated
 ```
 
-Variables de entorno:
+Canal:
 
-```env
-TELEGRAM_ENABLED=true
-TELEGRAM_BOT_TOKEN=your-telegram-bot-token
-TELEGRAM_CHAT_ID=your-chat-id
+```text
+infrawatch.dashboard
+```
+
+Evento:
+
+```text
+dashboard.updated
+```
+
+El frontend escucha el evento con Laravel Echo y recarga el panel administrativo.
+
+---
+
+### 14. Docker Compose
+
+Servicios principales:
+
+- `app`
+- `postgres`
+- `scheduler`
+- `reverb`
+
+Servicio opcional:
+
+- `queue`
+
+Levantar entorno:
+
+```bash
+cd backend
+docker compose up -d --build
 ```
 
 ---
 
-## Flujo de monitoreo de servicios
+### 15. Tests
+
+Tests principales:
+
+- API de métricas.
+- Creación de hosts.
+- Creación de service checks.
+- Creación de alerta cuando falla un servicio TCP.
+
+Ejecutar:
+
+```bash
+php artisan test
+```
+
+---
+
+### 16. GitHub Actions
+
+Archivo:
+
+```text
+.github/workflows/backend-ci.yml
+```
+
+El workflow ejecuta:
+
+- Composer install.
+- Configuración de PHP.
+- PostgreSQL para pruebas.
+- Migraciones.
+- Tests.
+- `php artisan route:list`.
+
+---
+
+## Flujos principales
+
+### Flujo de monitoreo TCP
 
 ```text
 Administrador registra equipo
@@ -276,12 +397,12 @@ Se genera o resuelve alerta
     ↓
 Si aplica, se envía notificación a Telegram
     ↓
-Dashboard muestra estado actualizado
+Se dispara evento DashboardUpdated
+    ↓
+Dashboard se actualiza en tiempo real
 ```
 
----
-
-## Flujo de métricas del agente
+### Flujo de métricas del agente
 
 ```text
 Equipo monitoreado
@@ -297,6 +418,8 @@ Laravel valida token del agente
 Laravel actualiza monitored_hosts
     ↓
 Laravel guarda registro en host_metrics
+    ↓
+Laravel dispara DashboardUpdated
     ↓
 Filament muestra métricas en Host Metrics y Dashboard
 ```
@@ -336,6 +459,12 @@ Filament muestra métricas en Host Metrics y Dashboard
             |
             v
 +-------------------------+
+| Laravel Reverb          |
+| WebSocket realtime      |
++-----------+-------------+
+            |
+            v
++-------------------------+
 | Telegram                |
 | Alertas y recuperación  |
 +-------------------------+
@@ -343,11 +472,21 @@ Filament muestra métricas en Host Metrics y Dashboard
 
 ---
 
-# Modelo de datos resumido
+## Modelo de datos resumido
 
----
+### `users`
 
-## `monitored_hosts`
+Guarda usuarios del panel administrativo.
+
+Campos principales:
+
+- `id`
+- `name`
+- `email`
+- `password`
+- `role`
+
+### `monitored_hosts`
 
 Guarda equipos monitoreados.
 
@@ -363,18 +502,8 @@ Campos principales:
 - `status`
 - `agent_token`
 - `last_seen_at`
-- `created_at`
-- `updated_at`
 
-Relaciones:
-
-- Tiene muchos servicios.
-- Tiene muchas métricas.
-- Tiene muchas alertas.
-
----
-
-## `monitored_services`
+### `monitored_services`
 
 Guarda servicios asociados a un equipo.
 
@@ -387,18 +516,8 @@ Campos principales:
 - `protocol`
 - `status`
 - `last_checked_at`
-- `created_at`
-- `updated_at`
 
-Relaciones:
-
-- Pertenece a un equipo.
-- Tiene muchos chequeos.
-- Tiene muchas alertas.
-
----
-
-## `service_checks`
+### `service_checks`
 
 Guarda historial de revisiones de servicios.
 
@@ -410,16 +529,8 @@ Campos principales:
 - `response_time_ms`
 - `message`
 - `checked_at`
-- `created_at`
-- `updated_at`
 
-Relaciones:
-
-- Pertenece a un servicio monitoreado.
-
----
-
-## `host_metrics`
+### `host_metrics`
 
 Guarda métricas enviadas por agentes.
 
@@ -432,16 +543,8 @@ Campos principales:
 - `disk_usage`
 - `uptime_seconds`
 - `recorded_at`
-- `created_at`
-- `updated_at`
 
-Relaciones:
-
-- Pertenece a un equipo monitoreado.
-
----
-
-## `alerts`
+### `alerts`
 
 Guarda alertas generadas por el sistema.
 
@@ -457,13 +560,6 @@ Campos principales:
 - `status`
 - `triggered_at`
 - `resolved_at`
-- `created_at`
-- `updated_at`
-
-Relaciones:
-
-- Puede pertenecer a un equipo.
-- Puede pertenecer a un servicio.
 
 ---
 
@@ -471,7 +567,7 @@ Relaciones:
 
 ### Uso de Laravel
 
-Laravel permite construir una API y lógica de backend de forma ordenada usando modelos, migraciones, comandos Artisan, scheduler y servicios internos.
+Laravel permite construir una API y lógica de backend de forma ordenada usando modelos, migraciones, comandos Artisan, scheduler, broadcasting y servicios internos.
 
 ### Uso de Filament
 
@@ -489,37 +585,50 @@ Python permite obtener métricas del sistema de forma sencilla mediante librerí
 
 Telegram permite enviar notificaciones externas de forma rápida y visible, útil para demostrar alertas automáticas en un sistema de monitoreo.
 
+### Uso de Laravel Reverb
+
+Laravel Reverb permite agregar WebSocket al proyecto y actualizar el panel administrativo en tiempo real.
+
 ---
 
 ## Estado actual de la arquitectura
 
-Actualmente InfraWatch cuenta con:
+Actualmente InfraWatch V2.0 cuenta con:
 
 - Backend Laravel funcional.
 - PostgreSQL en Docker.
+- Docker Compose completo.
 - Panel administrativo con Filament.
 - Monitoreo TCP.
 - Historial de chequeos.
 - Alertas básicas.
 - Resolución automática de alertas.
 - Notificaciones por Telegram.
-- Agente Python.
+- Agente Python mejorado.
 - Configuración segura del agente mediante `.env`.
+- Logs locales del agente.
+- Reintentos automáticos del agente.
 - API de recepción de métricas.
 - Dashboard administrativo.
 - Gráficas de CPU, RAM y disco.
 - Panel de control para ejecución manual y automática.
+- Botones para iniciar y detener procesos.
+- Roles y permisos.
+- Limpieza automática de historial antiguo.
+- Tests básicos.
+- GitHub Actions.
+- WebSocket con Laravel Reverb.
+- Actualización realtime del dashboard.
 
 ---
 
 ## Posibles mejoras arquitectónicas
 
 - Separar frontend público y backend API.
-- Agregar colas para procesamiento asíncrono.
-- Usar Redis para tareas programadas o caché.
-- Integrar WebSockets para actualizaciones en tiempo real.
-- Crear Docker Compose completo para todo el sistema.
+- Agregar colas reales para procesamiento asíncrono.
+- Usar Redis para tareas programadas, colas o caché.
+- Actualizar widgets específicos sin recargar toda la página.
 - Implementar autenticación avanzada para agentes.
-- Agregar roles y permisos.
 - Agregar sistema multiempresa o multisede.
-- Instalar el agente como servicio del sistema.
+- Agregar reportes PDF.
+- Preparar despliegue productivo con Nginx/Caddy y PHP-FPM.

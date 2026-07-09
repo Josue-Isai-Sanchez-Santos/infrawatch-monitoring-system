@@ -10,7 +10,16 @@
   <img src="https://img.shields.io/badge/PostgreSQL-Database-blue?style=for-the-badge&logo=postgresql" />
   <img src="https://img.shields.io/badge/Python-Agent-green?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/Telegram-Alerts-blue?style=for-the-badge&logo=telegram" />
+  <img src="https://img.shields.io/badge/Reverb-WebSocket-purple?style=for-the-badge" />
 </p>
+
+---
+
+## Estado del proyecto
+
+**Versión actual: V2.0 cerrada**
+
+InfraWatch V2.0 integra monitoreo TCP, agente Python, dashboard avanzado, roles, alertas por Telegram, limpieza automática, tests, CI con GitHub Actions, Docker Compose y actualización en tiempo real mediante WebSocket.
 
 ---
 
@@ -18,7 +27,7 @@
 
 **InfraWatch** es un sistema web de monitoreo de infraestructura TI desarrollado con **Laravel**, **Filament**, **PostgreSQL** y un **agente Python**.
 
-El sistema permite registrar equipos, monitorear servicios de red mediante puertos TCP, recolectar métricas del sistema, visualizar gráficas, consultar alertas y recibir notificaciones automáticas vía Telegram.
+El sistema permite registrar equipos, monitorear servicios de red mediante puertos TCP, recolectar métricas del sistema, visualizar gráficas, consultar alertas, recibir notificaciones automáticas vía Telegram y actualizar el panel administrativo en tiempo real mediante WebSocket.
 
 Está pensado como una solución base para supervisar servidores, estaciones de trabajo, servicios internos y métricas básicas como CPU, RAM, disco y uptime.
 
@@ -36,7 +45,11 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 - Resolución automática de alertas cuando el servicio vuelve a estar disponible.
 - Notificaciones automáticas vía Telegram para alertas y recuperaciones.
 - Agente Python para recolectar métricas del sistema.
-- Configuración segura del agente mediante archivo `.env`.
+- Agente configurable mediante archivo `.env`.
+- Agente con ejecución manual y continua.
+- Agente con logs locales.
+- Agente con reintentos automáticos.
+- Agente con modo `verbose` y modo `silent`.
 - API REST para recepción de métricas.
 - Dashboard con estadísticas generales.
 - Dashboard con gráficas de CPU, RAM y disco.
@@ -44,8 +57,19 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 - Tabla de servicios caídos.
 - Tabla de hosts con mayor uso de recursos.
 - Panel de control para ejecutar monitoreo TCP y agente Python desde Filament.
-- Base de datos PostgreSQL.
-- Entorno local con Docker.
+- Botones para iniciar y detener procesos automáticos desde el panel.
+- Sistema de roles: administrador, técnico y observador.
+- Control de permisos por módulo mediante Policies.
+- Limpieza automática de historial antiguo.
+- Comando `monitor:cleanup` para mantenimiento de métricas y chequeos.
+- Actualización en tiempo real con WebSocket.
+- Integración con Laravel Reverb.
+- Eventos en vivo para métricas, chequeos y alertas.
+- Tests automatizados básicos.
+- Integración continua con GitHub Actions.
+- Docker Compose completo para backend, PostgreSQL, Scheduler y Reverb.
+- Queue worker preparado como servicio opcional.
+- Documentación para instalar el agente como servicio Linux.
 
 ---
 
@@ -56,12 +80,16 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 | Backend | Laravel |
 | Panel administrativo | Filament |
 | Base de datos | PostgreSQL |
-| Contenedores | Docker |
+| Contenedores | Docker / Docker Compose |
 | Agente | Python |
 | Métricas del sistema | psutil |
 | Variables de entorno del agente | python-dotenv |
 | Comunicación HTTP | requests |
 | Notificaciones | Telegram Bot API |
+| WebSocket | Laravel Reverb |
+| Frontend realtime | Laravel Echo / Pusher JS |
+| Tests | PHPUnit / Laravel Test |
+| CI | GitHub Actions |
 | Control de versiones | Git / GitHub |
 
 ---
@@ -93,9 +121,15 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
             v
 +-------------------------+
 | Dashboard Filament      |
-| Estado general          |
-| Gráficas / Alertas      |
+| Estado / Gráficas       |
+| Alertas / Historial     |
++-----------+-------------+
+            |
+            v
 +-------------------------+
+| Laravel Reverb          |
+| WebSocket realtime      |
++-----------+-------------+
             |
             v
 +-------------------------+
@@ -104,11 +138,16 @@ Está pensado como una solución base para supervisar servidores, estaciones de 
 +-------------------------+
 ```
 
-Documentación completa:
+---
+
+## Documentación
 
 - [Arquitectura](docs/architecture.md)
 - [API](docs/api.md)
 - [Notificaciones por Telegram](docs/telegram.md)
+- [Docker Compose](docs/docker.md)
+- [Instalación del agente como servicio Linux](docs/agent-service-linux.md)
+- [Actualización en tiempo real con WebSocket](docs/realtime-websockets.md)
 
 ---
 
@@ -138,9 +177,9 @@ Documentación completa:
 
 ![Alerts](docs/screenshots/alerts.png)
 
-### Alertas via Telegram
+### Alertas vía Telegram
 
-![Alerts](docs/screenshots/telegram.jpg)
+![Telegram Alerts](docs/screenshots/telegram.jpg)
 
 > Si alguna imagen no aparece en GitHub, verificar que exista dentro de `docs/screenshots/` y que el nombre del archivo coincida exactamente.
 
@@ -150,12 +189,25 @@ Documentación completa:
 
 ```text
 infrawatch-monitoring-system/
+├── .github/
+│   └── workflows/
+│       └── backend-ci.yml
+│
 ├── backend/
 │   ├── app/
+│   │   ├── Console/
+│   │   ├── Events/
+│   │   ├── Filament/
+│   │   ├── Http/
+│   │   ├── Models/
+│   │   ├── Policies/
+│   │   └── Services/
 │   ├── config/
 │   ├── database/
-│   ├── routes/
+│   ├── docker/
 │   ├── resources/
+│   ├── routes/
+│   ├── tests/
 │   ├── docker-compose.yml
 │   ├── .env.example
 │   └── README.md
@@ -170,6 +222,9 @@ infrawatch-monitoring-system/
 │   ├── architecture.md
 │   ├── api.md
 │   ├── telegram.md
+│   ├── docker.md
+│   ├── agent-service-linux.md
+│   ├── realtime-websockets.md
 │   └── screenshots/
 │
 ├── .gitignore
@@ -188,12 +243,14 @@ infrawatch-monitoring-system/
 | Host Metrics | Métricas enviadas por el agente Python. |
 | Alerts | Alertas generadas por fallos detectados. |
 | Dashboard | Vista general del estado de la infraestructura. |
-| Monitoring Control | Panel para ejecutar monitoreo TCP y agente desde Filament. |
+| Monitoring Control | Panel para iniciar, detener y ejecutar procesos de monitoreo. |
+| Users | Administración de usuarios y roles. |
 | Telegram Notifications | Envío de alertas y recuperaciones vía Telegram. |
+| Realtime Events | Actualización del panel mediante WebSocket. |
 
 ---
 
-## Instalación rápida
+## Instalación rápida local
 
 ### 1. Clonar el repositorio
 
@@ -209,7 +266,7 @@ cd backend
 composer install
 cp .env.example .env
 php artisan key:generate
-docker compose up -d
+docker compose up -d postgres
 php artisan migrate
 php artisan make:filament-user
 php artisan serve
@@ -239,6 +296,10 @@ Editar `agent/.env`:
 API_URL=http://127.0.0.1:8000/api/agent/metrics
 AGENT_TOKEN=your-agent-token-here
 INTERVAL_SECONDS=60
+REQUEST_TIMEOUT_SECONDS=5
+RETRY_ATTEMPTS=3
+RETRY_DELAY_SECONDS=3
+LOG_FILE=logs/agent.log
 ```
 
 Ejecutar el agente una sola vez:
@@ -255,35 +316,84 @@ python agent.py --interval 60
 
 ---
 
+## Levantar con Docker Compose
+
+Desde `backend`:
+
+```bash
+docker compose up -d --build
+```
+
+Esto levanta:
+
+- Laravel app
+- PostgreSQL
+- Scheduler
+- Reverb
+
+Queue worker opcional:
+
+```bash
+docker compose --profile queue up -d
+```
+
+---
+
 ## Comandos principales
 
 ### Ejecutar monitoreo TCP manual
 
 ```bash
+cd backend
 php artisan monitor:services
 ```
 
 ### Ejecutar scheduler en desarrollo
 
 ```bash
+cd backend
 php artisan schedule:work
 ```
 
-### Ejecutar tareas programadas una sola vez
+### Limpiar historial antiguo de monitoreo
 
 ```bash
-php artisan schedule:run
+cd backend
+php artisan monitor:cleanup --days=30
 ```
 
-### Limpiar caché de Laravel
+### Simular limpieza sin borrar datos
 
 ```bash
-php artisan optimize:clear
+cd backend
+php artisan monitor:cleanup --days=30 --dry-run
+```
+
+### Ejecutar Reverb
+
+```bash
+cd backend
+php artisan reverb:start --host=0.0.0.0 --port=8080 --debug
+```
+
+### Ejecutar tests
+
+```bash
+cd backend
+php artisan test
+```
+
+### Formatear código PHP
+
+```bash
+cd backend
+./vendor/bin/pint
 ```
 
 ### Ver rutas registradas
 
 ```bash
+cd backend
 php artisan route:list
 ```
 
@@ -323,15 +433,79 @@ Documentación completa:
 
 ---
 
+## Actualización en tiempo real
+
+InfraWatch usa Laravel Reverb para transmitir eventos al panel administrativo.
+
+Evento principal:
+
+```text
+App\Events\DashboardUpdated
+```
+
+Canal:
+
+```text
+infrawatch.dashboard
+```
+
+Evento:
+
+```text
+dashboard.updated
+```
+
+Documentación completa:
+
+[Ver documentación de WebSocket](docs/realtime-websockets.md)
+
+---
+
+## Roles y permisos
+
+| Rol | Permisos |
+|---|---|
+| Administrador | Acceso total al sistema, usuarios, monitoreo, recursos y eliminación de registros. |
+| Técnico | Puede revisar infraestructura, crear/editar hosts y servicios, consultar métricas y resolver alertas. |
+| Observador | Solo lectura sobre dashboard, hosts, servicios, métricas, chequeos y alertas. |
+
+La página `Monitoring Control` y la administración de usuarios están restringidas al rol administrador.
+
+---
+
+## Integración continua
+
+El proyecto incluye un workflow de GitHub Actions para validar el backend automáticamente.
+
+Archivo:
+
+```text
+.github/workflows/backend-ci.yml
+```
+
+El workflow ejecuta:
+
+- Instalación de dependencias con Composer.
+- Configuración de PHP.
+- Servicio PostgreSQL para pruebas.
+- Migraciones de base de datos.
+- Tests automatizados.
+- Revisión de rutas registradas.
+
+Se ejecuta automáticamente en cada `push` o `pull request` hacia `main` o `master`.
+
+---
+
 ## Estado actual
 
-Versión actual: **V1 funcional en desarrollo**
+**Versión actual: V2.0 cerrada**
 
 Funcionalidades implementadas:
 
 - Backend Laravel funcional.
 - Panel administrativo con Filament.
-- Base de datos PostgreSQL en Docker.
+- Base de datos PostgreSQL.
+- Docker Compose completo.
 - CRUD de equipos monitoreados.
 - CRUD de servicios monitoreados.
 - Comando de monitoreo TCP.
@@ -347,23 +521,30 @@ Funcionalidades implementadas:
 - Notificaciones vía Telegram.
 - Agente Python para métricas del sistema.
 - Agente configurable mediante `.env`.
+- Agente con logs, reintentos, modo `verbose` y modo `silent`.
 - API para recepción de métricas.
 - Panel de control para ejecutar procesos manuales y automáticos.
+- Botones para iniciar y detener procesos automáticos.
+- Roles y permisos.
+- Limpieza automática de métricas y chequeos antiguos.
+- Tests básicos de API, modelos y comando de monitoreo.
+- GitHub Actions para CI.
+- WebSocket con Laravel Reverb.
+- Dashboard actualizado en tiempo real.
 
 ---
 
 ## Próximas mejoras
 
-- Botones para detener procesos automáticos desde el panel.
-- Notificaciones por correo electrónico.
-- Roles y permisos.
 - Reportes PDF.
-- Limpieza automática de métricas antiguas.
-- Docker Compose completo para backend, base de datos y servicios auxiliares.
-- Tests automatizados.
-- GitHub Actions.
+- Notificaciones por correo electrónico.
+- Métricas de red en el agente.
+- Métricas de temperatura si el hardware lo permite.
+- Comandos desde Telegram para consultar estado.
+- Sistema multiempresa o multisede.
 - Deploy en VPS o servidor local.
-- Instalación del agente como servicio del sistema.
+- Producción con Nginx/Caddy y PHP-FPM.
+- Actualización granular de widgets sin recargar toda la página.
 
 ---
 
@@ -380,10 +561,11 @@ Archivos que sí pueden subirse:
 Credenciales que deben mantenerse privadas:
 
 - `APP_KEY`
-- `DB_PASSWORD` si se usa una contraseña real
+- `DB_PASSWORD` si se usa una contraseña real.
 - `AGENT_TOKEN`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
+- `REVERB_APP_SECRET`
 
 ---
 

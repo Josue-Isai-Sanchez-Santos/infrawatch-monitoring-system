@@ -196,6 +196,7 @@ AGENT_TOKEN = "local-agent-token-123"
 headers = {
     "Authorization": f"Bearer {AGENT_TOKEN}",
     "Accept": "application/json",
+    "Content-Type": "application/json",
 }
 
 payload = {
@@ -229,7 +230,8 @@ Cuando el backend recibe una petición:
 7. Marca el equipo como `online`.
 8. Actualiza `last_seen_at`.
 9. Guarda las métricas en `host_metrics`.
-10. Responde con el ID del registro creado.
+10. Dispara el evento `DashboardUpdated`.
+11. Responde con el ID del registro creado.
 
 ---
 
@@ -272,6 +274,24 @@ Campos guardados:
 
 ---
 
+## Relación con WebSocket
+
+Después de guardar una métrica correctamente, el backend dispara:
+
+```text
+App\Events\DashboardUpdated
+```
+
+Tipo de evento:
+
+```text
+host_metric_created
+```
+
+Esto permite que el panel administrativo reciba una actualización en tiempo real mediante Laravel Reverb.
+
+---
+
 ## Relación con el agente Python
 
 El agente Python utiliza esta API para enviar métricas al backend.
@@ -282,6 +302,10 @@ Configuración esperada en `agent/.env`:
 API_URL=http://127.0.0.1:8000/api/agent/metrics
 AGENT_TOKEN=your-agent-token-here
 INTERVAL_SECONDS=60
+REQUEST_TIMEOUT_SECONDS=5
+RETRY_ATTEMPTS=3
+RETRY_DELAY_SECONDS=3
+LOG_FILE=logs/agent.log
 ```
 
 El agente puede ejecutarse una sola vez:
@@ -294,6 +318,24 @@ O de forma continua:
 
 ```bash
 python agent.py --interval 60
+```
+
+---
+
+## Tests relacionados
+
+El endpoint cuenta con tests básicos para validar:
+
+- Envío correcto con token válido.
+- Rechazo por token faltante.
+- Rechazo por token inválido.
+- Creación de métricas en `host_metrics`.
+- Actualización del equipo en `monitored_hosts`.
+
+Ejecutar:
+
+```bash
+php artisan test --filter=AgentMetricsApiTest
 ```
 
 ---

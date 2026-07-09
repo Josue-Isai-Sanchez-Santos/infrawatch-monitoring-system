@@ -230,6 +230,23 @@ app/Services/TelegramNotifier.php
 
 ---
 
+## Relación con el monitoreo TCP
+
+El comando:
+
+```bash
+php artisan monitor:services
+```
+
+llama al servicio `TelegramNotifier` cuando:
+
+- Se crea una alerta nueva.
+- Una alerta abierta se resuelve automáticamente.
+
+El objetivo es evitar spam: si un servicio sigue caído, no se envía una alerta nueva en cada ejecución del scheduler.
+
+---
+
 ## Mensaje de alerta
 
 Ejemplo de mensaje enviado cuando un servicio cae:
@@ -263,6 +280,26 @@ IP: 127.0.0.1
 Puerto: 8000
 
 El servicio volvió a estar disponible.
+```
+
+---
+
+## Relación con WebSocket
+
+Las notificaciones de Telegram funcionan junto con la actualización realtime del panel.
+
+Cuando un servicio cambia de estado:
+
+```text
+monitor:services detecta cambio
+    ↓
+Se crea o resuelve alerta
+    ↓
+Se envía Telegram si aplica
+    ↓
+Se dispara DashboardUpdated
+    ↓
+El dashboard se actualiza por WebSocket
 ```
 
 ---

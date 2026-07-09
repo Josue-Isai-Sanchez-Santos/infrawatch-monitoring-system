@@ -11,6 +11,7 @@ InfraWatch incluye una configuración de Docker Compose para levantar el backend
 | `app` | Aplicación Laravel ejecutada con `php artisan serve`. |
 | `postgres` | Base de datos PostgreSQL. |
 | `scheduler` | Ejecuta Laravel Scheduler con `php artisan schedule:work`. |
+| `reverb` | Servidor WebSocket Laravel Reverb. |
 | `queue` | Worker de colas preparado para uso futuro. Se ejecuta mediante profile opcional. |
 
 ---
@@ -28,6 +29,17 @@ Esto levanta:
 - Laravel app
 - PostgreSQL
 - Scheduler
+- Reverb
+
+---
+
+## Levantar solo PostgreSQL
+
+Para trabajar con Laravel fuera de Docker:
+
+```bash
+docker compose up -d postgres
+```
 
 ---
 
@@ -53,10 +65,22 @@ Scheduler:
 docker compose logs -f scheduler
 ```
 
+Reverb:
+
+```bash
+docker compose logs -f reverb
+```
+
 PostgreSQL:
 
 ```bash
 docker compose logs -f postgres
+```
+
+Queue worker:
+
+```bash
+docker compose logs -f queue
 ```
 
 ---
@@ -73,6 +97,17 @@ http://127.0.0.1:8000/admin
 
 ```bash
 docker compose exec app php artisan make:filament-user
+```
+
+Después de crear el usuario, asignar rol administrador si es necesario:
+
+```bash
+docker compose exec app php artisan tinker
+```
+
+```php
+$user = \App\Models\User::first();
+$user->update(['role' => 'admin']);
 ```
 
 ---
@@ -101,6 +136,12 @@ Tests:
 
 ```bash
 docker compose exec app php artisan test
+```
+
+Rutas:
+
+```bash
+docker compose exec app php artisan route:list
 ```
 
 ---
@@ -155,6 +196,48 @@ Cuando se ejecuta Laravel fuera de Docker, normalmente se usa:
 DB_HOST=127.0.0.1
 ```
 
+Dentro de Docker, Laravel publica eventos hacia Reverb usando:
+
+```env
+REVERB_HOST=reverb
+REVERB_PORT=8080
+```
+
+Desde el navegador, normalmente se usa:
+
+```env
+VITE_REVERB_HOST=127.0.0.1
+VITE_REVERB_PORT=8080
+```
+
+---
+
+## Reverb en Docker Compose
+
+El servicio `reverb` debe estar dentro del bloque `services` en `docker-compose.yml`.
+
+Estructura correcta:
+
+```yaml
+services:
+  app:
+    # ...
+
+  scheduler:
+    # ...
+
+  postgres:
+    # ...
+
+  reverb:
+    # ...
+
+volumes:
+  infrawatch_postgres_data:
+```
+
+Si `reverb:` queda fuera de `services`, Docker Compose no lo interpretará como servicio del proyecto.
+
 ---
 
 ## Notas
@@ -168,3 +251,4 @@ Para producción se recomienda:
 - Usar variables de entorno seguras.
 - Activar HTTPS.
 - Separar credenciales reales del repositorio.
+- Usar un servidor WebSocket configurado para producción.

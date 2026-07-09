@@ -204,3 +204,35 @@ sudo systemctl disable infrawatch-agent
 - Cambiar el token si se sospecha exposición.
 - Usar HTTPS para conectar con el backend en producción.
 - Ejecutar el servicio con un usuario sin privilegios administrativos.
+
+---
+
+## Comando recomendado para producción local
+
+Para ejecución continua silenciosa:
+
+```bash
+python agent.py --interval 60 --silent
+```
+
+Para diagnóstico:
+
+```bash
+python agent.py --once --verbose
+```
+
+---
+
+## Relación con InfraWatch V2.0
+
+En InfraWatch V2.0, el agente forma parte del flujo realtime:
+
+```text
+Agente envía métricas
+    ↓
+Backend guarda host_metrics
+    ↓
+Backend dispara DashboardUpdated
+    ↓
+Dashboard se actualiza vía WebSocket
+```
