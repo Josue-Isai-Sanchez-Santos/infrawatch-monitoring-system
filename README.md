@@ -572,3 +572,10 @@ Credenciales que deben mantenerse privadas:
 ## Autor
 
 Desarrollado por **Josue Isai Sanchez Santos** como proyecto de portafolio técnico enfocado en sistemas, redes, monitoreo e infraestructura TI.
+
+
+```markdown
+## Licencia
+
+Este proyecto se distribuye bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para obtener más información.
+```
