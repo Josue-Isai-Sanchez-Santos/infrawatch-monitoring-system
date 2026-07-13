@@ -577,5 +577,5 @@ Desarrollado por **Josue Isai Sanchez Santos** como proyecto de portafolio técn
 
 ## Licencia
 
-Este proyecto se distribuye bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE.md) para obtener más información.
+Este proyecto se distribuye bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para obtener más información.
 
