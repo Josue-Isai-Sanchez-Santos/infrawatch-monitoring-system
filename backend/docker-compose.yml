@@ -16,18 +16,18 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: infrawatch
-      DB_USERNAME: infrawatch_user
-      DB_PASSWORD: infrawatch_password
+      DB_DATABASE: "${DB_DATABASE:-infrawatch}"
+      DB_USERNAME: "${DB_USERNAME:-infrawatch_user}"
+      DB_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD in .env.docker}"
       CACHE_STORE: array
       SESSION_DRIVER: file
       QUEUE_CONNECTION: sync
       TELEGRAM_ENABLED: false
       MONITORING_HISTORY_RETENTION_DAYS: 30
       BROADCAST_CONNECTION: reverb
-      REVERB_APP_ID: infrawatch-local
-      REVERB_APP_KEY: infrawatch-local-key
-      REVERB_APP_SECRET: infrawatch-local-secret
+      REVERB_APP_ID: "${REVERB_APP_ID:?Define REVERB_APP_ID in .env.docker}"
+      REVERB_APP_KEY: "${REVERB_APP_KEY:?Define REVERB_APP_KEY in .env.docker}"
+      REVERB_APP_SECRET: "${REVERB_APP_SECRET:?Define REVERB_APP_SECRET in .env.docker}"
       REVERB_HOST: reverb
       REVERB_PORT: 8080
       REVERB_SCHEME: http
@@ -39,7 +39,7 @@ services:
       composer install &&
       php artisan key:generate --force &&
       php artisan migrate --force &&
-      php artisan serve --host=0.0.0.0 --port=8000
+      php artisan serve --host=0.0.0.0 --port=8000 --no-reload
       "
 
   scheduler:
@@ -57,18 +57,18 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: infrawatch
-      DB_USERNAME: infrawatch_user
-      DB_PASSWORD: infrawatch_password
+      DB_DATABASE: "${DB_DATABASE:-infrawatch}"
+      DB_USERNAME: "${DB_USERNAME:-infrawatch_user}"
+      DB_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD in .env.docker}"
       CACHE_STORE: array
       SESSION_DRIVER: file
       QUEUE_CONNECTION: sync
       TELEGRAM_ENABLED: false
       MONITORING_HISTORY_RETENTION_DAYS: 30
       BROADCAST_CONNECTION: reverb
-      REVERB_APP_ID: infrawatch-local
-      REVERB_APP_KEY: infrawatch-local-key
-      REVERB_APP_SECRET: infrawatch-local-secret
+      REVERB_APP_ID: "${REVERB_APP_ID:?Define REVERB_APP_ID in .env.docker}"
+      REVERB_APP_KEY: "${REVERB_APP_KEY:?Define REVERB_APP_KEY in .env.docker}"
+      REVERB_APP_SECRET: "${REVERB_APP_SECRET:?Define REVERB_APP_SECRET in .env.docker}"
       REVERB_HOST: reverb
       REVERB_PORT: 8080
       REVERB_SCHEME: http
@@ -98,9 +98,9 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: infrawatch
-      DB_USERNAME: infrawatch_user
-      DB_PASSWORD: infrawatch_password
+      DB_DATABASE: "${DB_DATABASE:-infrawatch}"
+      DB_USERNAME: "${DB_USERNAME:-infrawatch_user}"
+      DB_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD in .env.docker}"
       CACHE_STORE: array
       SESSION_DRIVER: file
       QUEUE_CONNECTION: sync
@@ -123,19 +123,22 @@ services:
     container_name: infrawatch_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: infrawatch
-      POSTGRES_USER: infrawatch_user
-      POSTGRES_PASSWORD: infrawatch_password
+      POSTGRES_DB: "${DB_DATABASE:-infrawatch}"
+      POSTGRES_USER: "${DB_USERNAME:-infrawatch_user}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD in .env.docker}"
     ports:
       - "5432:5432"
     volumes:
       - infrawatch_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U infrawatch_user -d infrawatch"]
+      test:
+          [
+            "CMD-SHELL",
+            "pg_isready -U ${DB_USERNAME:-infrawatch_user} -d ${DB_DATABASE:-infrawatch}"
+          ]
       interval: 10s
       timeout: 5s
       retries: 5
-    
   reverb:
     build:
       context: .
@@ -152,9 +155,9 @@ services:
       APP_DEBUG: true
 
       BROADCAST_CONNECTION: reverb
-      REVERB_APP_ID: infrawatch-local
-      REVERB_APP_KEY: infrawatch-local-key
-      REVERB_APP_SECRET: infrawatch-local-secret
+      REVERB_APP_ID: "${REVERB_APP_ID:?Define REVERB_APP_ID in .env.docker}"
+      REVERB_APP_KEY: "${REVERB_APP_KEY:?Define REVERB_APP_KEY in .env.docker}"
+      REVERB_APP_SECRET: "${REVERB_APP_SECRET:?Define REVERB_APP_SECRET in .env.docker}"
       REVERB_HOST: reverb
       REVERB_PORT: 8080
       REVERB_SCHEME: http
@@ -164,9 +167,9 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: infrawatch
-      DB_USERNAME: infrawatch_user
-      DB_PASSWORD: infrawatch_password
+      DB_DATABASE: "${DB_DATABASE:-infrawatch}"
+      DB_USERNAME: "${DB_USERNAME:-infrawatch_user}"
+      DB_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD in .env.docker}"
 
       CACHE_STORE: array
       SESSION_DRIVER: file

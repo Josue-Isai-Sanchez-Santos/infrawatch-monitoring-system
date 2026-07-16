@@ -169,7 +169,7 @@ Ejemplo de respuesta:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/agent/metrics \
-  -H "Authorization: Bearer local-agent-token-123" \
+  -H "Authorization: Bearer ${AGENT_TOKEN}" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{
@@ -191,7 +191,7 @@ curl -X POST http://127.0.0.1:8000/api/agent/metrics \
 import requests
 
 API_URL = "http://127.0.0.1:8000/api/agent/metrics"
-AGENT_TOKEN = "local-agent-token-123"
+AGENT_TOKEN = "${AGENT_TOKEN}"
 
 headers = {
     "Authorization": f"Bearer {AGENT_TOKEN}",

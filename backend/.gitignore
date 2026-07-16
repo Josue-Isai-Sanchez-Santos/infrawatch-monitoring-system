@@ -33,4 +33,6 @@ Thumbs.db
 
 # Environment files
 /.env.*
-!.env.example
+!/.env.example
+.gitleaksignore
+!/.env.docker.example
