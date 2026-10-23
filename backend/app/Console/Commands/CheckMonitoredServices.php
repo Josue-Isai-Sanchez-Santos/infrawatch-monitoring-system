@@ -29,13 +29,16 @@ class CheckMonitoredServices extends Command
         $this->info('Checking monitored services...');
 
         foreach ($services as $service) {
-            $host = $service->host;
+    if ($service->protocol !== 'tcp') {
+        $this->warn(
+            "Servicio omitido: {$service->name}. "
+            ."Protocolo no soportado: {$service->protocol}."
+        );
 
-            if (! $host) {
-                $this->warn("Service {$service->name} has no host assigned.");
+        continue;
+    }
 
-                continue;
-            }
+    $host = $service->host;
 
             $ip = $host->ip_address;
             $port = (int) $service->port;

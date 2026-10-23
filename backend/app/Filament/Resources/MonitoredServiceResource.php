@@ -42,13 +42,13 @@ class MonitoredServiceResource extends Resource
                             ->maxValue(65535),
 
                         Forms\Components\Select::make('protocol')
-                            ->label('Protocolo')
-                            ->options([
-                                'tcp' => 'TCP',
-                                'udp' => 'UDP',
-                            ])
-                            ->default('tcp')
-                            ->required(),
+    ->label('Protocolo')
+    ->options([
+        'tcp' => 'TCP',
+    ])
+    ->default('tcp')
+    ->required()
+    ->helperText('InfraWatch V2.0 admite únicamente monitoreo TCP.'),
 
                         Forms\Components\Select::make('status')
                             ->label('Estado')
