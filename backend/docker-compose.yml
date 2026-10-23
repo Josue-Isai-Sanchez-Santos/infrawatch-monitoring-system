@@ -34,6 +34,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      vite:
+        condition: service_healthy
     command: >
       sh -c "
       composer install &&
@@ -184,5 +186,39 @@ services:
       composer install &&
       php artisan reverb:start --host=0.0.0.0 --port=8080
       "
+  vite:
+    image: node:22-alpine
+    container_name: infrawatch_vite
+    restart: unless-stopped
+    working_dir: /var/www/html
+
+    ports:
+      - "127.0.0.1:5173:5173"
+
+    volumes:
+      - ./:/var/www/html
+      - infrawatch_node_modules:/var/www/html/node_modules
+
+    environment:
+      VITE_REVERB_APP_KEY: "${REVERB_APP_KEY:?Define REVERB_APP_KEY in .env.docker}"
+      VITE_REVERB_HOST: "127.0.0.1"
+      VITE_REVERB_PORT: "8080"
+      VITE_REVERB_SCHEME: "http"
+
+    command: >
+      sh -c "
+      npm ci &&
+      npm run dev -- --host=0.0.0.0 --port=5173
+      "
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "test -f public/hot && wget -q -O /dev/null http://127.0.0.1:5173/@vite/client"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
 volumes:
   infrawatch_postgres_data:
+  infrawatch_node_modules:
