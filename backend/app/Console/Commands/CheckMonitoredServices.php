@@ -6,9 +6,9 @@ use App\Events\DashboardUpdated;
 use App\Models\Alert;
 use App\Models\MonitoredService;
 use App\Models\ServiceCheck;
-use App\Services\TelegramNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use App\Jobs\SendTelegramAlert;
 
 class CheckMonitoredServices extends Command
 {
@@ -27,7 +27,6 @@ class CheckMonitoredServices extends Command
         }
 
         $this->info('Checking monitored services...');
-        $telegramNotifier = app(TelegramNotifier::class);
 
         foreach ($services as $service) {
             $host = $service->host;
@@ -95,9 +94,15 @@ class CheckMonitoredServices extends Command
                     ]
                 );
 
-                if ($alert->wasRecentlyCreated) {
-                    $telegramNotifier->sendAlertCreated($alert);
-                }
+                if (
+    $alert->wasRecentlyCreated &&
+    config('services.telegram.enabled')
+) {
+    SendTelegramAlert::dispatch(
+        $alert->id,
+        'created'
+    );
+}
             }
 
             if ($status === 'online') {
@@ -113,7 +118,12 @@ class CheckMonitoredServices extends Command
                         'resolved_at' => Carbon::now(),
                     ]);
 
-                    $telegramNotifier->sendAlertResolved($openAlert);
+                    if (config('services.telegram.enabled')) {
+    SendTelegramAlert::dispatch(
+        $openAlert->id,
+        'resolved'
+    );
+}
                 }
             }
         }

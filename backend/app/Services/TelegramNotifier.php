@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Alert;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 class TelegramNotifier
 {
@@ -67,21 +68,29 @@ class TelegramNotifier
         $chatId = config('services.telegram.chat_id');
 
         if (! $botToken || ! $chatId) {
-            Log::warning('Telegram notification skipped: missing bot token or chat id.');
+            Log::warning(
+                'Telegram notification skipped: missing bot token or chat id.'
+            );
 
             return;
         }
 
-        $response = Http::timeout(10)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
-            'chat_id' => $chatId,
-            'text' => $message,
-        ]);
+        $response = Http::timeout(10)->post(
+            "https://api.telegram.org/bot{$botToken}/sendMessage",
+            [
+                'chat_id' => $chatId,
+                'text' => $message,
+            ]
+        );
 
         if (! $response->successful()) {
             Log::warning('Telegram notification failed.', [
                 'status' => $response->status(),
-                'response' => $response->body(),
             ]);
+
+            throw new RuntimeException(
+                'Telegram API returned HTTP '.$response->status()
+            );
         }
     }
 
