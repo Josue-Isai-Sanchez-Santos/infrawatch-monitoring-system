@@ -6,6 +6,7 @@ use Illuminate\Console\Scheduling\CacheEventMutex;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class SchedulerConfigurationTest extends TestCase
@@ -50,9 +51,17 @@ class SchedulerConfigurationTest extends TestCase
             $event->command
         );
 
-        $this->assertSame('0 3 * * *', $event->expression);
+        $this->assertSame(
+            '0 3 * * *',
+            $event->expression
+        );
+
         $this->assertTrue($event->withoutOverlapping);
-        $this->assertSame(1440, $event->expiresAt);
+
+        $this->assertSame(
+            1440,
+            $event->expiresAt
+        );
 
         $this->assertSame(
             'database',
@@ -60,7 +69,7 @@ class SchedulerConfigurationTest extends TestCase
         );
     }
 
-    public function test_database_mutex_tracks_lock_lifecycle(): void
+    public function test_database_mutex_persists_and_releases_lock(): void
     {
         $event = $this->findScheduledEvent('monitor:services');
 
@@ -71,27 +80,46 @@ class SchedulerConfigurationTest extends TestCase
             $mutex
         );
 
-        $this->assertSame('database', $mutex->store);
+        $this->assertSame(
+            'database',
+            $mutex->store
+        );
 
-        // Antes de adquirirlo, el bloqueo no existe.
-        $this->assertFalse($mutex->exists($event));
+        // Obtener exactamente el prefijo utilizado
+        // por el almacenamiento database de Laravel.
+        $prefix = Cache::store('database')
+            ->getStore()
+            ->getPrefix();
 
-        // Simulamos el inicio de una ejecución.
-        $this->assertTrue($mutex->create($event));
+        $lockKey = $prefix.$event->mutexName();
+
+        // Comprobar directamente la tabla de bloqueos.
+        // No utilizamos $mutex->exists(), porque puede
+        // intentar adquirir un bloqueo internamente.
+        $this->assertDatabaseMissing('cache_locks', [
+            'key' => $lockKey,
+        ]);
+
+        // Simular el inicio de una tarea programada.
+        $this->assertTrue(
+            $mutex->create($event)
+        );
 
         try {
-            // El Scheduler debe detectar que la tarea
-            // ya tiene una ejecución protegida.
-            $this->assertTrue($mutex->exists($event));
-
+            // Verificar que el bloqueo se almacenó
+            // correctamente en la base de datos.
+            $this->assertDatabaseHas('cache_locks', [
+                'key' => $lockKey,
+            ]);
         } finally {
-            // Liberamos el bloqueo incluso si falla
-            // alguna aserción de la prueba.
+            // Liberarlo aunque falle una aserción.
             $mutex->forget($event);
         }
 
-        // Una vez liberado, el bloqueo desaparece.
-        $this->assertFalse($mutex->exists($event));
+        // Confirmar que el bloqueo fue eliminado.
+        $this->assertDatabaseMissing('cache_locks', [
+            'key' => $lockKey,
+        ]);
     }
 
     private function findScheduledEvent(string $command): Event
@@ -105,7 +133,10 @@ class SchedulerConfigurationTest extends TestCase
                     )
             );
 
-        $this->assertInstanceOf(Event::class, $event);
+        $this->assertInstanceOf(
+            Event::class,
+            $event
+        );
 
         return $event;
     }
