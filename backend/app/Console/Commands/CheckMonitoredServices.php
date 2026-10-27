@@ -3,12 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Events\DashboardUpdated;
+use App\Jobs\SendTelegramAlert;
 use App\Models\Alert;
 use App\Models\MonitoredService;
 use App\Models\ServiceCheck;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use App\Jobs\SendTelegramAlert;
 
 class CheckMonitoredServices extends Command
 {
@@ -29,25 +29,42 @@ class CheckMonitoredServices extends Command
         $this->info('Checking monitored services...');
 
         foreach ($services as $service) {
-    if ($service->protocol !== 'tcp') {
-        $this->warn(
-            "Servicio omitido: {$service->name}. "
-            ."Protocolo no soportado: {$service->protocol}."
-        );
+            // InfraWatch V2.0 solo admite comprobaciones TCP.
+            if ($service->protocol !== 'tcp') {
+                $this->warn(
+                    "Servicio omitido: {$service->name}. "
+                    ."Protocolo no soportado: {$service->protocol}."
+                );
 
-        continue;
-    }
+                continue;
+            }
 
-    $host = $service->host;
+            $host = $service->host;
+
+            if (! $host) {
+                $this->warn(
+                    "Service {$service->name} has no host assigned."
+                );
+
+                continue;
+            }
 
             $ip = $host->ip_address;
             $port = (int) $service->port;
 
             $startTime = microtime(true);
 
-            $connection = @fsockopen($ip, $port, $errorCode, $errorMessage, 3);
+            $connection = @fsockopen(
+                $ip,
+                $port,
+                $errorCode,
+                $errorMessage,
+                3
+            );
 
-            $responseTimeMs = (int) round((microtime(true) - $startTime) * 1000);
+            $responseTimeMs = (int) round(
+                (microtime(true) - $startTime) * 1000
+            );
 
             if ($connection) {
                 fclose($connection);
@@ -55,12 +72,16 @@ class CheckMonitoredServices extends Command
                 $status = 'online';
                 $message = "Service {$service->name} is reachable on {$ip}:{$port}.";
 
-                $this->info("[ONLINE] {$host->name} - {$service->name} ({$ip}:{$port})");
+                $this->info(
+                    "[ONLINE] {$host->name} - {$service->name} ({$ip}:{$port})"
+                );
             } else {
                 $status = 'offline';
                 $message = "Service {$service->name} is not reachable on {$ip}:{$port}. Error: {$errorMessage}";
 
-                $this->error("[OFFLINE] {$host->name} - {$service->name} ({$ip}:{$port})");
+                $this->error(
+                    "[OFFLINE] {$host->name} - {$service->name} ({$ip}:{$port})"
+                );
             }
 
             ServiceCheck::create([
@@ -76,10 +97,12 @@ class CheckMonitoredServices extends Command
                 'last_checked_at' => Carbon::now(),
             ]);
 
-            $host->update([
-                'status' => $status,
-                'last_seen_at' => $status === 'online' ? Carbon::now() : $host->last_seen_at,
-            ]);
+            // IMPORTANTE:
+            // El monitor TCP nunca modifica:
+            // monitored_hosts.status
+            // monitored_hosts.last_seen_at
+            //
+            // Esos datos corresponden al agente Python.
 
             if ($status === 'offline') {
                 $alert = Alert::firstOrCreate(
@@ -98,14 +121,14 @@ class CheckMonitoredServices extends Command
                 );
 
                 if (
-    $alert->wasRecentlyCreated &&
-    config('services.telegram.enabled')
-) {
-    SendTelegramAlert::dispatch(
-        $alert->id,
-        'created'
-    );
-}
+                    $alert->wasRecentlyCreated &&
+                    config('services.telegram.enabled')
+                ) {
+                    SendTelegramAlert::dispatch(
+                        $alert->id,
+                        'created'
+                    );
+                }
             }
 
             if ($status === 'online') {
@@ -122,11 +145,11 @@ class CheckMonitoredServices extends Command
                     ]);
 
                     if (config('services.telegram.enabled')) {
-    SendTelegramAlert::dispatch(
-        $openAlert->id,
-        'resolved'
-    );
-}
+                        SendTelegramAlert::dispatch(
+                            $openAlert->id,
+                            'resolved'
+                        );
+                    }
                 }
             }
         }

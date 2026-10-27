@@ -18,12 +18,12 @@ class InfraStatsOverview extends BaseWidget
                 ->icon('heroicon-o-server'),
 
             Stat::make('Equipos online', MonitoredHost::where('status', 'online')->count())
-                ->description('Responden correctamente')
+                ->description('Último estado registrado del agente')
                 ->color('success')
                 ->icon('heroicon-o-check-circle'),
 
             Stat::make('Equipos offline', MonitoredHost::where('status', 'offline')->count())
-                ->description('No responden')
+                ->description('Último estado registrado del agente')
                 ->color('danger')
                 ->icon('heroicon-o-x-circle'),
 

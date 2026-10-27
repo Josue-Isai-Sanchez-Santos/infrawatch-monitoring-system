@@ -37,4 +37,44 @@ class MonitoredHost extends Model
     {
         return $this->hasMany(Alert::class);
     }
+
+    public function getServicesStatusAttribute(): string
+    {
+        // Solo se consideran protocolos admitidos
+        // por el monitor de InfraWatch V2.0.
+        $tcpServices = $this->services->filter(
+            fn (MonitoredService $service): bool =>
+                $service->protocol === 'tcp'
+        );
+
+        if ($tcpServices->isEmpty()) {
+            return 'unknown';
+        }
+
+        // Un solo servicio caído hace que la salud
+        // agregada sea crítica.
+        $hasOfflineService = $tcpServices->contains(
+            fn (MonitoredService $service): bool =>
+                $service->last_checked_at !== null
+                && in_array(
+                    $service->status,
+                    ['offline', 'critical'],
+                    true
+                )
+        );
+
+        if ($hasOfflineService) {
+            return 'critical';
+        }
+
+        // Todos deben haber sido comprobados
+        // y encontrarse online.
+        $allOnline = $tcpServices->every(
+            fn (MonitoredService $service): bool =>
+                $service->last_checked_at !== null
+                && $service->status === 'online'
+        );
+
+        return $allOnline ? 'online' : 'unknown';
+    }
 }

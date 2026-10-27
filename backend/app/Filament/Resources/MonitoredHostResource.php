@@ -59,16 +59,20 @@ class MonitoredHostResource extends Resource
                             ->maxLength(255),
 
                         Forms\Components\Select::make('status')
-                            ->label('Estado')
-                            ->options([
-                                'unknown' => 'Desconocido',
-                                'online' => 'Online',
-                                'offline' => 'Offline',
-                                'warning' => 'Warning',
-                                'critical' => 'Critical',
-                            ])
-                            ->default('unknown')
-                            ->required(),
+    ->label('Último estado del agente')
+    ->options([
+        'unknown' => 'Desconocido',
+        'online' => 'Online',
+        'offline' => 'Offline',
+        'warning' => 'Warning',
+        'critical' => 'Critical',
+    ])
+    ->default('unknown')
+    ->disabled()
+    ->dehydrated(false)
+    ->helperText(
+        'Estado de solo lectura. Lo actualiza la API del agente.'
+    ),
                     ])
                     ->columns(2),
 
@@ -80,16 +84,22 @@ class MonitoredHostResource extends Resource
                             ->unique(ignoreRecord: true),
 
                         Forms\Components\DateTimePicker::make('last_seen_at')
-                            ->label('Última conexión'),
+    ->label('Último reporte del agente')
+    ->disabled()
+    ->dehydrated(false),
                     ])
                     ->columns(2),
             ]);
     }
 
     public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
+{
+    return $table
+        ->modifyQueryUsing(
+            fn (\Illuminate\Database\Eloquent\Builder $query) =>
+                $query->with('services')
+        )
+        ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()
@@ -113,7 +123,7 @@ class MonitoredHostResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('status')
-                    ->label('Estado')
+                    ->label('Último estado agente')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'online' => 'success',
@@ -129,6 +139,19 @@ class MonitoredHostResource extends Resource
                         'critical' => 'Critical',
                         default => 'Desconocido',
                     }),
+Tables\Columns\TextColumn::make('services_status')
+    ->label('Salud servicios TCP')
+    ->badge()
+    ->color(fn (string $state): string => match ($state) {
+        'online' => 'success',
+        'critical' => 'danger',
+        default => 'gray',
+    })
+    ->formatStateUsing(fn (string $state): string => match ($state) {
+        'online' => 'Online',
+        'critical' => 'Crítico',
+        default => 'Desconocido',
+    }),
 
                 Tables\Columns\TextColumn::make('location')
                     ->label('Ubicación')
@@ -147,7 +170,7 @@ class MonitoredHostResource extends Resource
             ])
             ->filters([
             Tables\Filters\SelectFilter::make('status')
-                    ->label('Estado')
+                    ->label('Estado del agente')
                     ->options([
                         'unknown' => 'Desconocido',
                         'online' => 'Online',

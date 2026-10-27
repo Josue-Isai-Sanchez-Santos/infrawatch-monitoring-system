@@ -44,12 +44,12 @@ class InfrastructureStatusOverview extends BaseWidget
                 ->icon('heroicon-o-heart'),
 
             Stat::make('Equipos monitoreados', $totalHosts)
-                ->description("Online: {$onlineHosts} / Offline: {$offlineHosts}")
+                ->description("Último estado del agente: online {$onlineHosts} / offline {$offlineHosts}")
                 ->color($offlineHosts > 0 ? 'warning' : 'success')
                 ->icon('heroicon-o-server-stack'),
 
             Stat::make('Servicios monitoreados', $totalServices)
-                ->description("Online: {$onlineServices} / Offline: {$offlineServices}")
+                ->description("Último estado del agente: online {$onlineHosts} / offline {$offlineHosts}")
                 ->color($offlineServices > 0 ? 'danger' : 'success')
                 ->icon('heroicon-o-signal'),
 
