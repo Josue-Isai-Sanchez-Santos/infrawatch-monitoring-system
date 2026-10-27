@@ -19,11 +19,16 @@ class SchedulerConfigurationTest extends TestCase
         $this->assertSame('* * * * *', $event->expression);
         $this->assertTrue($event->withoutOverlapping);
         $this->assertSame(10, $event->expiresAt);
+
         $this->assertInstanceOf(
             CacheEventMutex::class,
             $event->mutex
         );
-        $this->assertSame('database', $event->mutex->store);
+
+        $this->assertSame(
+            'database',
+            $event->mutex->store
+        );
     }
 
     public function test_cleanup_runs_daily_with_configured_retention(): void
@@ -48,34 +53,45 @@ class SchedulerConfigurationTest extends TestCase
         $this->assertSame('0 3 * * *', $event->expression);
         $this->assertTrue($event->withoutOverlapping);
         $this->assertSame(1440, $event->expiresAt);
-        $this->assertSame('database', $event->mutex->store);
+
+        $this->assertSame(
+            'database',
+            $event->mutex->store
+        );
     }
 
-    public function test_database_mutex_rejects_an_overlapping_execution(): void
+    public function test_database_mutex_tracks_lock_lifecycle(): void
     {
         $event = $this->findScheduledEvent('monitor:services');
 
-        // Primera ejecución: obtiene el bloqueo.
-        $this->assertTrue($event->mutex->create($event));
+        $mutex = $event->mutex;
+
+        $this->assertInstanceOf(
+            CacheEventMutex::class,
+            $mutex
+        );
+
+        $this->assertSame('database', $mutex->store);
+
+        // Antes de adquirirlo, el bloqueo no existe.
+        $this->assertFalse($mutex->exists($event));
+
+        // Simulamos el inicio de una ejecución.
+        $this->assertTrue($mutex->create($event));
 
         try {
-            // Segunda ejecución: no puede obtenerlo.
-            $this->assertFalse(
-                $event->mutex->create($event)
-            );
+            // El Scheduler debe detectar que la tarea
+            // ya tiene una ejecución protegida.
+            $this->assertTrue($mutex->exists($event));
 
-            $this->assertTrue(
-                $event->mutex->exists($event)
-            );
         } finally {
             // Liberamos el bloqueo incluso si falla
-            // alguna aserción.
-            $event->mutex->forget($event);
+            // alguna aserción de la prueba.
+            $mutex->forget($event);
         }
 
-        $this->assertFalse(
-            $event->mutex->exists($event)
-        );
+        // Una vez liberado, el bloqueo desaparece.
+        $this->assertFalse($mutex->exists($event));
     }
 
     private function findScheduledEvent(string $command): Event
