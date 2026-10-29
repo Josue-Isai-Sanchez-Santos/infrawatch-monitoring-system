@@ -136,6 +136,59 @@ services:
       --verbose
       "
 
+  broadcast-worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+
+    container_name: infrawatch_broadcast_worker
+    restart: unless-stopped
+    working_dir: /var/www/html
+
+    volumes:
+      - ./:/var/www/html
+
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: "${DB_DATABASE:-infrawatch}"
+      DB_USERNAME: "${DB_USERNAME:-infrawatch_user}"
+      DB_PASSWORD: "${DB_PASSWORD:?Define DB_PASSWORD in .env.docker}"
+
+      CACHE_STORE: array
+      QUEUE_CONNECTION: database
+
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: "${REVERB_APP_ID:?Define REVERB_APP_ID in .env.docker}"
+      REVERB_APP_KEY: "${REVERB_APP_KEY:?Define REVERB_APP_KEY in .env.docker}"
+      REVERB_APP_SECRET: "${REVERB_APP_SECRET:?Define REVERB_APP_SECRET in .env.docker}"
+      REVERB_HOST: reverb
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+      reverb:
+        condition: service_started
+
+    command: >
+      sh -c "
+      composer install &&
+      php artisan queue:work database
+      --queue=broadcasts
+      --sleep=3
+      --tries=3
+      --timeout=20
+      --verbose
+      "
+
   postgres:
     image: postgres:16
     container_name: infrawatch_postgres

@@ -5,6 +5,7 @@ import platform
 import socket
 import sys
 import time
+import uuid
 from pathlib import Path
 
 import psutil
@@ -72,6 +73,7 @@ def collect_metrics(logger):
     disk_path = "/" if platform.system().lower() != "windows" else "C:\\"
 
     metrics = {
+        "reading_id": str(uuid.uuid4()),
         "hostname": socket.gethostname(),
         "ip_address": get_ip_address(),
         "operating_system": f"{platform.system()} {platform.release()}",
@@ -159,6 +161,11 @@ def send_metrics(logger):
             logger.info(f"Reintentando en {RETRY_DELAY_SECONDS} segundos.")
             time.sleep(RETRY_DELAY_SECONDS)
 
+        if response.status_code == 429:
+            logger.warning("El backend aplicó rate limiting (HTTP 429). "
+                            "No se realizarán más intentos en este ciclo.")
+
+    return False
     logger.error("No se pudieron enviar las métricas después de varios intentos.")
     return False
 

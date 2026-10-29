@@ -9,6 +9,7 @@ class HostMetric extends Model
 {
     protected $fillable = [
         'monitored_host_id',
+        'reading_id',
         'cpu_usage',
         'ram_usage',
         'disk_usage',
@@ -22,6 +23,9 @@ class HostMetric extends Model
 
     public function host(): BelongsTo
     {
-        return $this->belongsTo(MonitoredHost::class, 'monitored_host_id');
+        return $this->belongsTo(
+            MonitoredHost::class,
+            'monitored_host_id'
+        );
     }
 }
