@@ -135,7 +135,7 @@ class AlertResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-            Tables\Filters\SelectFilter::make('severity')
+                Tables\Filters\SelectFilter::make('severity')
                     ->label('Severidad')
                     ->options([
                         'info' => 'Info',
@@ -143,16 +143,16 @@ class AlertResource extends Resource
                         'critical' => 'Critical',
                     ]),
 
-            Tables\Filters\SelectFilter::make('status')
+                Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
                     ->options([
                         'open' => 'Abierta',
                         'resolved' => 'Resuelta',
                         'ignored' => 'Ignorada',
                     ]),
-        ])
+            ])
             ->actions([
-            Tables\Actions\Action::make('resolve')
+                Tables\Actions\Action::make('resolve')
                     ->label('Resolver')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -169,14 +169,14 @@ class AlertResource extends Resource
                         );
 
                     }),
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
-        ])
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
             ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-            ]),
-        ]);
+                ]),
+            ]);
     }
 
     public static function getRelations(): array

@@ -42,13 +42,13 @@ class MonitoredServiceResource extends Resource
                             ->maxValue(65535),
 
                         Forms\Components\Select::make('protocol')
-    ->label('Protocolo')
-    ->options([
-        'tcp' => 'TCP',
-    ])
-    ->default('tcp')
-    ->required()
-    ->helperText('InfraWatch V2.0 admite únicamente monitoreo TCP.'),
+                            ->label('Protocolo')
+                            ->options([
+                                'tcp' => 'TCP',
+                            ])
+                            ->default('tcp')
+                            ->required()
+                            ->helperText('InfraWatch V2.0 admite únicamente monitoreo TCP.'),
 
                         Forms\Components\Select::make('status')
                             ->label('Estado')
@@ -119,7 +119,7 @@ class MonitoredServiceResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-            Tables\Filters\SelectFilter::make('status')
+                Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
                     ->options([
                         'unknown' => 'Desconocido',
@@ -128,16 +128,16 @@ class MonitoredServiceResource extends Resource
                         'warning' => 'Warning',
                         'critical' => 'Critical',
                     ]),
-        ])
+            ])
             ->actions([
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
-        ])
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
             ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-            ]),
-        ]);
+                ]),
+            ]);
     }
 
     public static function getRelations(): array

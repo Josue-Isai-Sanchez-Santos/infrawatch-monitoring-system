@@ -177,4 +177,3 @@ class HostStatusSeparationTest extends TestCase
         ]);
     }
 }
-

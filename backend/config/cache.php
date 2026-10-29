@@ -18,6 +18,12 @@ return [
     'default' => env('CACHE_STORE', 'database'),
 
     /*
+| Almacenamiento persistente para el rate limiting.
+| Independiente de la caché general de Laravel.
+*/
+    'limiter' => env('RATE_LIMITER_STORE', 'database'),
+
+    /*
     |--------------------------------------------------------------------------
     | Cache Stores
     |--------------------------------------------------------------------------

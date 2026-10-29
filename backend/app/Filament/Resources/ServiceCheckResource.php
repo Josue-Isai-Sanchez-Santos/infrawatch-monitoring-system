@@ -77,7 +77,7 @@ class ServiceCheckResource extends Resource
             ])
             ->defaultSort('checked_at', 'desc')
             ->filters([
-            Tables\Filters\SelectFilter::make('status')
+                Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
                     ->options([
                         'online' => 'Online',
@@ -85,10 +85,10 @@ class ServiceCheckResource extends Resource
                         'warning' => 'Warning',
                         'critical' => 'Critical',
                     ]),
-        ])
+            ])
             ->actions([
-            Tables\Actions\ViewAction::make(),
-        ])
+                Tables\Actions\ViewAction::make(),
+            ])
             ->bulkActions([]);
     }
 

@@ -23,16 +23,49 @@ class AgentMetricController extends Controller
         }
 
         $validated = $request->validate([
-            'hostname' => ['required', 'string', 'max:255'],
-            'ip_address' => ['required', 'string', 'max:45'],
-            'operating_system' => ['nullable', 'string', 'max:255'],
-            'cpu_usage' => ['required', 'numeric', 'min:0', 'max:100'],
-            'ram_usage' => ['required', 'numeric', 'min:0', 'max:100'],
-            'disk_usage' => ['required', 'numeric', 'min:0', 'max:100'],
-            'uptime_seconds' => ['nullable', 'integer', 'min:0'],
+            'hostname' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+            'ip_address' => [
+                'required',
+                'ip',
+            ],
+            'operating_system' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'cpu_usage' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+            'ram_usage' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+            'disk_usage' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+            'uptime_seconds' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
         ]);
 
-        $host = MonitoredHost::where('agent_token', $token)->first();
+        $host = MonitoredHost::where(
+            'agent_token',
+            $token
+        )->first();
 
         if (! $host) {
             return response()->json([
@@ -43,7 +76,8 @@ class AgentMetricController extends Controller
         $host->update([
             'hostname' => $validated['hostname'],
             'ip_address' => $validated['ip_address'],
-            'operating_system' => $validated['operating_system'] ?? $host->operating_system,
+            'operating_system' => $validated['operating_system']
+                ?? $host->operating_system,
             'status' => 'online',
             'last_seen_at' => Carbon::now(),
         ]);

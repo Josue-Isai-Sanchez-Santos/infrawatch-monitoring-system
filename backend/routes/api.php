@@ -3,4 +3,7 @@
 use App\Http\Controllers\Api\AgentMetricController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/agent/metrics', [AgentMetricController::class, 'store']);
+Route::post(
+    '/agent/metrics',
+    [AgentMetricController::class, 'store']
+)->middleware('throttle:agent-metrics');

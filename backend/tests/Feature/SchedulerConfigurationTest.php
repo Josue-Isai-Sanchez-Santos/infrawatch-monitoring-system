@@ -126,11 +126,10 @@ class SchedulerConfigurationTest extends TestCase
     {
         $event = collect(app(Schedule::class)->events())
             ->first(
-                fn (Event $candidate): bool =>
-                    str_contains(
-                        (string) $candidate->command,
-                        $command
-                    )
+                fn (Event $candidate): bool => str_contains(
+                    (string) $candidate->command,
+                    $command
+                )
             );
 
         $this->assertInstanceOf(

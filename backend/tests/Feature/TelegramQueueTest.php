@@ -47,8 +47,7 @@ class TelegramQueueTest extends TestCase
 
         Queue::assertPushed(
             SendTelegramAlert::class,
-            fn (SendTelegramAlert $job): bool =>
-                $job->alertId === $alert->id
+            fn (SendTelegramAlert $job): bool => $job->alertId === $alert->id
                 && $job->action === 'created'
         );
     }
@@ -77,8 +76,7 @@ class TelegramQueueTest extends TestCase
         $job->handle(app(TelegramNotifier::class));
 
         Http::assertSent(
-            fn ($request): bool =>
-                $request->url() ===
+            fn ($request): bool => $request->url() ===
                     'https://api.telegram.org/botfake-token/sendMessage'
                 && $request['chat_id'] === 'fake-chat'
                 && str_contains(

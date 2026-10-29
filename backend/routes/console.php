@@ -64,4 +64,3 @@ Schedule::command(
 )
     ->dailyAt('03:00')
     ->withoutOverlapping();
-
