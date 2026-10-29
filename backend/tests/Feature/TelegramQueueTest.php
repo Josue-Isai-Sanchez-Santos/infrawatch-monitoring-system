@@ -19,10 +19,15 @@ class TelegramQueueTest extends TestCase
 
     public function test_monitoring_dispatches_a_job_when_service_goes_offline(): void
     {
-        Queue::fake();
-
         config([
             'services.telegram.enabled' => true,
+            'queue.default' => 'sync',
+        ]);
+
+        Queue::fake();
+
+        Http::fake([
+            'api.telegram.org/*' => Http::failedConnection(),
         ]);
 
         $host = MonitoredHost::create([
@@ -41,7 +46,8 @@ class TelegramQueueTest extends TestCase
             'status' => 'unknown',
         ]);
 
-        $this->artisan('monitor:services')->assertSuccessful();
+        $this->artisan('monitor:services')
+            ->assertSuccessful();
 
         $alert = Alert::query()->firstOrFail();
 
@@ -49,16 +55,17 @@ class TelegramQueueTest extends TestCase
             SendTelegramAlert::class,
             fn (SendTelegramAlert $job): bool => $job->alertId === $alert->id
                 && $job->action === 'created'
+                && $job->connection === 'database'
         );
+
+        // No debe haberse intentado llamar a Telegram
+        // desde el proceso principal de monitoreo.
+        Http::assertNothingSent();
     }
 
     public function test_job_sends_telegram_notification_using_mock_http(): void
     {
-        config([
-            'services.telegram.enabled' => true,
-            'services.telegram.bot_token' => 'fake-token',
-            'services.telegram.chat_id' => 'fake-chat',
-        ]);
+        $this->enableTelegram();
 
         Http::fake([
             'api.telegram.org/*' => Http::response([
@@ -90,11 +97,7 @@ class TelegramQueueTest extends TestCase
 
     public function test_job_throws_exception_when_telegram_returns_error(): void
     {
-        config([
-            'services.telegram.enabled' => true,
-            'services.telegram.bot_token' => 'fake-token',
-            'services.telegram.chat_id' => 'fake-chat',
-        ]);
+        $this->enableTelegram();
 
         Http::fake([
             'api.telegram.org/*' => Http::response([
@@ -104,14 +107,80 @@ class TelegramQueueTest extends TestCase
 
         $alert = $this->createTestAlert();
 
+        $job = new SendTelegramAlert(
+            $alert->id,
+            'created'
+        );
+
         $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Telegram API returned HTTP 500'
+        );
+
+        $job->handle(app(TelegramNotifier::class));
+    }
+
+    public function test_connection_failure_is_rethrown_for_queue_retry(): void
+    {
+        $this->enableTelegram();
+
+        Http::fake([
+            'api.telegram.org/*' => Http::failedConnection(),
+        ]);
+
+        $alert = $this->createTestAlert();
 
         $job = new SendTelegramAlert(
             $alert->id,
             'created'
         );
 
-        $job->handle(app(TelegramNotifier::class));
+        try {
+            $job->handle(app(TelegramNotifier::class));
+        } catch (RuntimeException $exception) {
+            $this->assertSame(
+                'Telegram connection failed.',
+                $exception->getMessage()
+            );
+
+            Http::assertSentCount(1);
+
+            return;
+        }
+
+        $this->fail(
+            'Expected Telegram connection failure was not thrown.'
+        );
+    }
+
+    public function test_telegram_job_uses_persistent_queue_and_retries(): void
+    {
+        $job = new SendTelegramAlert(
+            123,
+            'created'
+        );
+
+        $this->assertSame(
+            'database',
+            $job->connection
+        );
+
+        $this->assertSame(3, $job->tries);
+        $this->assertSame(20, $job->timeout);
+
+        $this->assertSame(
+            [10, 30],
+            $job->backoff()
+        );
+    }
+
+    private function enableTelegram(): void
+    {
+        config([
+            'services.telegram.enabled' => true,
+            'services.telegram.bot_token' => 'fake-token',
+            'services.telegram.chat_id' => 'fake-chat',
+        ]);
     }
 
     private function createTestAlert(): Alert

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Alert;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -69,25 +70,53 @@ class TelegramNotifier
 
         if (! $botToken || ! $chatId) {
             Log::warning(
-                'Telegram notification skipped: missing bot token or chat id.'
+                'Telegram notification skipped: missing credentials.'
             );
 
             return;
         }
 
-        $response = Http::timeout(10)->post(
-            "https://api.telegram.org/bot{$botToken}/sendMessage",
-            [
-                'chat_id' => $chatId,
-                'text' => $message,
-            ]
-        );
+        $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+
+        try {
+            $response = Http::connectTimeout(3)
+                ->timeout(10)
+                ->post($url, [
+                    'chat_id' => $chatId,
+                    'text' => $message,
+                ]);
+
+        } catch (ConnectionException $exception) {
+
+            // No registramos el mensaje original de la
+            // excepción: podría incluir la URL con el
+            // token secreto del bot de Telegram.
+
+            Log::warning(
+                'No se pudo conectar con Telegram.',
+                [
+                    'exception_type' => get_class($exception),
+                ]
+            );
+
+            // Lanzamos una excepción sin credenciales
+            // para que el worker reintente este trabajo.
+            throw new RuntimeException(
+                'Telegram connection failed.'
+            );
+        }
 
         if (! $response->successful()) {
-            Log::warning('Telegram notification failed.', [
-                'status' => $response->status(),
-            ]);
 
+            Log::warning(
+                'Telegram notification failed.',
+                [
+                    'status' => $response->status(),
+                ]
+            );
+
+            // Los fallos HTTP también serán procesados
+            // por la política de reintentos del job.
             throw new RuntimeException(
                 'Telegram API returned HTTP '.$response->status()
             );
