@@ -195,7 +195,7 @@ class MonitoredHostResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-            Tables\Filters\SelectFilter::make('status')
+                Tables\Filters\SelectFilter::make('status')
                     ->label('Estado del agente')
                     ->options([
                         'unknown' => 'Desconocido',
@@ -205,7 +205,7 @@ class MonitoredHostResource extends Resource
                         'critical' => 'Critical',
                     ]),
 
-            Tables\Filters\SelectFilter::make('host_type')
+                Tables\Filters\SelectFilter::make('host_type')
                     ->label('Tipo')
                     ->options([
                         'server' => 'Servidor',
@@ -215,16 +215,16 @@ class MonitoredHostResource extends Resource
                         'printer' => 'Impresora',
                         'other' => 'Otro',
                     ]),
-        ])
+            ])
             ->actions([
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
-        ])
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
             ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-            ]),
-        ]);
+                ]),
+            ]);
     }
 
     public static function getRelations(): array
