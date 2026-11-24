@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Filament\Resources\UserResource;
 use App\Models\User;
 use App\Services\UserAdministrationService;
-use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;

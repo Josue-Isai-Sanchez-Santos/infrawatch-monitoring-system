@@ -56,8 +56,7 @@ class UserResource extends Resource
                         ->default('observer')
                         // Se permite cambiar nombre, correo y contraseña propios,
                         // pero nunca el rol de la propia cuenta.
-                        ->disabled(fn (?User $record): bool =>
-                            $record !== null && Auth::id() === $record->getKey()
+                        ->disabled(fn (?User $record): bool => $record !== null && Auth::id() === $record->getKey()
                         ),
 
                     Forms\Components\TextInput::make('password')
