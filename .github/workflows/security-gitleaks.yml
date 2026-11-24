@@ -1,0 +1,41 @@
+name: Secret Scanning (Gitleaks)
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: '23 3 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Scan repository for secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full Git history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # Personal GitHub accounts do not need a Gitleaks license.
+      # PR comments are disabled so contents:read remains sufficient.
+      - name: Scan with Gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'

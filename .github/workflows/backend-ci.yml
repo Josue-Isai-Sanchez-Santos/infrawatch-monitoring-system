@@ -11,6 +11,13 @@ on:
       - master
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   laravel-tests:
     name: Laravel Backend Tests
@@ -52,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -66,6 +73,31 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Check PHP formatting
+        run: ./vendor/bin/pint --test
+
+      - name: Audit Composer dependencies
+        run: composer audit --locked --no-interaction
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Audit Node dependencies
+        run: npm audit --audit-level=high
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Validate Docker Compose
+        run: docker compose --env-file .env.docker.example config --quiet
 
       - name: Create environment file
         run: cp .env.example .env
@@ -84,4 +116,3 @@ jobs:
 
       - name: Check registered routes
         run: php artisan route:list
-
