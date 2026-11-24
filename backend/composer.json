@@ -1,9 +1,19 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "josue-sanchez/infrawatch-monitoring-system",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Sistema de monitoreo de infraestructura TI con Laravel, Filament, PostgreSQL, Python, Telegram y WebSocket.",
+    "keywords": [
+        "monitoring",
+        "infrastructure",
+        "laravel",
+        "filament",
+        "postgresql",
+        "python",
+        "telegram",
+        "websocket",
+        "reverb"
+    ],
     "license": "MIT",
     "require": {
         "php": ">=8.4.1 <8.6",
