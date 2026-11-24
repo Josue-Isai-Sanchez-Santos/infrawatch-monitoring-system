@@ -257,7 +257,7 @@ services:
       php artisan reverb:start --host=0.0.0.0 --port=8080
       "
   vite:
-    image: node:22-alpine
+    image: node:24-alpine
     container_name: infrawatch_vite
     restart: unless-stopped
     working_dir: /var/www/html

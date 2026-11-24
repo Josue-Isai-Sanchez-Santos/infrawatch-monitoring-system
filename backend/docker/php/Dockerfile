@@ -1,4 +1,6 @@
-FROM php:8.4-cli
+# PHP 8.4: latest security/patch release within the branch, Debian Bookworm base.
+# Avoid an unreviewed jump to PHP 8.6, which is incompatible with some locked deps.
+FROM php:8.4-cli-bookworm
 
 WORKDIR /var/www/html
 
