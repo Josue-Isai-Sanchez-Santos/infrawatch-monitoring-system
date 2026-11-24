@@ -101,9 +101,12 @@ http://127.0.0.1:8000/admin
 
 ---
 
-## Configuración de base de datos
+## Configuración de base de datos y entorno
 
-Configuración esperada en `.env` para desarrollo local fuera de Docker:
+### Laravel local (fuera de Docker)
+
+`backend/.env.example` es una plantilla **exclusivamente para desarrollo local**.
+Después de ejecutar `cp .env.example .env`, Laravel usará estos valores:
 
 ```env
 DB_CONNECTION=pgsql
@@ -112,13 +115,50 @@ DB_PORT=5432
 DB_DATABASE=infrawatch
 DB_USERNAME=infrawatch_user
 DB_PASSWORD=infrawatch_password
+BROADCAST_CONNECTION=reverb
 ```
 
-Dentro de Docker Compose, el host debe ser:
+**IMPORTANTE:** `infrawatch_password` es una credencial pública, desechable y
+predecible. **Nunca debe usarse en producción, en una base compartida ni en un
+servidor accesible desde otras computadoras.** Sustituye las credenciales en
+tu `.env` privado por valores únicos para cualquier instalación real.
 
-```env
-DB_HOST=postgres
+El archivo `backend/.env` contiene la configuración real y está excluido de Git.
+No lo sobrescribas al aplicar cambios de `.env.example`.
+
+### PostgreSQL y Laravel dentro de Docker Compose
+
+Docker Compose utiliza un archivo **diferente**: `backend/.env.docker`, creado
+localmente a partir de `.env.docker.example`. En Docker, la aplicación usa
+`DB_HOST=postgres` mediante `docker-compose.yml`, en vez de `127.0.0.1`.
+Las variables del bloque `environment:` de Compose tienen precedencia sobre
+los valores de `.env` dentro del contenedor.
+
+```bash
+cd backend
+cp -n .env.docker.example .env.docker
+# Edita .env.docker: establece DB_PASSWORD y claves REVERB seguras.
+docker compose --env-file .env.docker up -d postgres
 ```
+
+Si ejecutas Laravel **en WSL o en el host** y PostgreSQL **en Docker**, el
+usuario, base y contraseña de `backend/.env` deben coincidir con los que existen
+realmente en PostgreSQL y están definidos para Compose en `.env.docker`.
+Modificar `DB_PASSWORD` en `.env.docker` no cambia automáticamente la contraseña
+de un usuario existente en un volumen PostgreSQL ya inicializado.
+
+**Seguridad:** el Compose actual publica el puerto PostgreSQL como `5432:5432`,
+lo cual podría permitir conexiones desde la red. En entornos estrictamente
+locales, cambia ese mapeo a `127.0.0.1:5432:5432` o elimina la publicación si
+solo acceden otros contenedores. Antes de exponer cualquier instalación, usa
+credenciales robustas, `APP_DEBUG=false` y HTTPS/WSS.
+
+### Broadcasting
+
+La plantilla declara **una sola** variable `BROADCAST_CONNECTION=reverb`.
+Para pruebas que no requieren WebSocket, el workflow CI sobrescribe esta
+configuración desde su entorno de ejecución; no hace falta agregar valores
+duplicados al archivo `.env.example`.
 
 ---
 
