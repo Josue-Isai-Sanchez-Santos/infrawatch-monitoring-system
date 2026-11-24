@@ -68,13 +68,9 @@ class TopResourceUsageHosts extends BaseWidget
 
     private function getLatestMetricsQuery(): Builder
     {
-        $latestMetricIds = HostMetric::query()
-            ->selectRaw('MAX(id) as id')
-            ->groupBy('monitored_host_id');
-
         return HostMetric::query()
+            ->latestPerHost()
             ->with('host')
-            ->whereIn('id', $latestMetricIds)
             ->orderByDesc('cpu_usage');
     }
 }
