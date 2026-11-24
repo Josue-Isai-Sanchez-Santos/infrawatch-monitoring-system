@@ -4,13 +4,15 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Services\UserAdministrationService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Gate;
 
 class UserResource extends Resource
 {
@@ -26,71 +28,50 @@ class UserResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Usuarios';
 
-    public static function canViewAny(): bool
-    {
-        return Auth::user()?->isAdmin() ?? false;
-    }
-
-    public static function canCreate(): bool
-    {
-        return Auth::user()?->isAdmin() ?? false;
-    }
-
-    public static function canEdit($record): bool
-    {
-        return Auth::user()?->isAdmin() ?? false;
-    }
-
-    public static function canDelete($record): bool
-    {
-        $user = Auth::user();
-
-        if (! $user?->isAdmin()) {
-            return false;
-        }
-
-        return $record->id !== $user->id;
-    }
-
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Información del usuario')
-                    ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nombre')
-                            ->required()
-                            ->maxLength(255),
+        return $form->schema([
+            Forms\Components\Section::make('Información del usuario')
+                ->schema([
+                    Forms\Components\TextInput::make('name')
+                        ->label('Nombre')
+                        ->required()
+                        ->maxLength(255),
 
-                        Forms\Components\TextInput::make('email')
-                            ->label('Correo electrónico')
-                            ->email()
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(255),
+                    Forms\Components\TextInput::make('email')
+                        ->label('Correo electrónico')
+                        ->email()
+                        ->required()
+                        ->unique(ignoreRecord: true)
+                        ->maxLength(255),
 
-                        Forms\Components\Select::make('role')
-                            ->label('Rol')
-                            ->options([
-                                'admin' => 'Administrador',
-                                'technician' => 'Técnico',
-                                'observer' => 'Observador',
-                            ])
-                            ->required()
-                            ->default('observer'),
+                    Forms\Components\Select::make('role')
+                        ->label('Rol')
+                        ->options([
+                            'admin' => 'Administrador',
+                            'technician' => 'Técnico',
+                            'observer' => 'Observador',
+                        ])
+                        ->required()
+                        ->default('observer')
+                        // Se permite cambiar nombre, correo y contraseña propios,
+                        // pero nunca el rol de la propia cuenta.
+                        ->disabled(fn (?User $record): bool =>
+                            $record !== null && Auth::id() === $record->getKey()
+                        ),
 
-                        Forms\Components\TextInput::make('password')
-                            ->label('Contraseña')
-                            ->password()
-                            ->revealable()
-                            ->dehydrated(fn ($state) => filled($state))
-                            ->dehydrateStateUsing(fn ($state) => Hash::make($state))
-                            ->required(fn (string $operation): bool => $operation === 'create')
-                            ->maxLength(255),
-                    ])
-                    ->columns(2),
-            ]);
+                    Forms\Components\TextInput::make('password')
+                        ->label('Contraseña')
+                        ->password()
+                        ->revealable()
+                        ->formatStateUsing(fn (): ?string => null)
+                        ->dehydrated(fn (?string $state): bool => filled($state))
+                        // El modelo User ya aplica el cast 'hashed'.
+                        ->required(fn (string $operation): bool => $operation === 'create')
+                        ->maxLength(255),
+                ])
+                ->columns(2),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -131,15 +112,22 @@ class UserResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
 
-                Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (User $record): bool => Auth::id() === $record->id),
+                Tables\Actions\Action::make('delete')
+                    ->label('Eliminar')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn (User $record): bool => Gate::allows('delete', $record))
+                    ->action(function (User $record): void {
+                        app(UserAdministrationService::class)->delete(Auth::user(), $record);
+
+                        Notification::make()
+                            ->title('Usuario eliminado')
+                            ->success()
+                            ->send();
+                    }),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn (): bool => Auth::user()?->isAdmin() ?? false),
-                ]),
-            ]);
+            ->bulkActions([]);
     }
 
     public static function getPages(): array
