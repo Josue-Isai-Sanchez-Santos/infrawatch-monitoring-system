@@ -29,11 +29,36 @@ class ServiceCheckPolicy
 
     public function delete(User $user, ServiceCheck $serviceCheck): bool
     {
-        return $user->role === 'admin';
+        return false;
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->role === 'admin';
+        return false;
+    }
+
+    public function restore(User $user, ServiceCheck $serviceCheck): bool
+    {
+        return false;
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return false;
+    }
+
+    public function forceDelete(User $user, ServiceCheck $serviceCheck): bool
+    {
+        return false;
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return false;
+    }
+
+    public function replicate(User $user, ServiceCheck $serviceCheck): bool
+    {
+        return false;
     }
 }

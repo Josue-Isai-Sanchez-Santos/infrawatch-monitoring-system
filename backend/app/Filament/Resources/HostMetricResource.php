@@ -16,6 +16,7 @@ class HostMetricResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    // El formulario se conserva para el ViewAction de solo lectura.
     public static function form(Form $form): Form
     {
         return $form
@@ -86,23 +87,6 @@ class HostMetricResource extends Resource
     {
         return [
             'index' => Pages\ListHostMetrics::route('/'),
-            'create' => Pages\CreateHostMetric::route('/create'),
-            'edit' => Pages\EditHostMetric::route('/{record}/edit'),
         ];
-    }
-
-    public static function canCreate(): bool
-    {
-        return false;
-    }
-
-    public static function canEdit($record): bool
-    {
-        return false;
-    }
-
-    public static function canDelete($record): bool
-    {
-        return false;
     }
 }

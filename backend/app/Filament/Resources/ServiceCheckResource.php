@@ -16,6 +16,7 @@ class ServiceCheckResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    // El formulario se conserva para el ViewAction de solo lectura.
     public static function form(Form $form): Form
     {
         return $form
@@ -103,23 +104,6 @@ class ServiceCheckResource extends Resource
     {
         return [
             'index' => Pages\ListServiceChecks::route('/'),
-            'create' => Pages\CreateServiceCheck::route('/create'),
-            'edit' => Pages\EditServiceCheck::route('/{record}/edit'),
         ];
-    }
-
-    public static function canCreate(): bool
-    {
-        return false;
-    }
-
-    public static function canEdit($record): bool
-    {
-        return false;
-    }
-
-    public static function canDelete($record): bool
-    {
-        return false;
     }
 }
