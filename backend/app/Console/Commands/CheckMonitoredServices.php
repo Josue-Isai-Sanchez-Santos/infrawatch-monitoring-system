@@ -7,6 +7,7 @@ use App\Jobs\SendTelegramAlert;
 use App\Models\Alert;
 use App\Models\MonitoredService;
 use App\Models\ServiceCheck;
+use App\Services\TcpServiceChecker;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -16,7 +17,7 @@ class CheckMonitoredServices extends Command
 
     protected $description = 'Check monitored services availability by testing TCP ports';
 
-    public function handle(): int
+    public function handle(TcpServiceChecker $tcpServiceChecker): int
     {
         $services = MonitoredService::with('host')->get();
 
@@ -52,22 +53,10 @@ class CheckMonitoredServices extends Command
             $ip = $host->ip_address;
             $port = (int) $service->port;
 
-            $startTime = microtime(true);
+            $result = $tcpServiceChecker->check($ip, $port);
+            $responseTimeMs = $result['response_time_ms'];
 
-            $connection = @fsockopen(
-                $ip,
-                $port,
-                $errorCode,
-                $errorMessage,
-                3
-            );
-
-            $responseTimeMs = (int) round(
-                (microtime(true) - $startTime) * 1000
-            );
-
-            if ($connection) {
-                fclose($connection);
+            if ($result['reachable']) {
 
                 $status = 'online';
                 $message = "Service {$service->name} is reachable on {$ip}:{$port}.";
@@ -77,7 +66,7 @@ class CheckMonitoredServices extends Command
                 );
             } else {
                 $status = 'offline';
-                $message = "Service {$service->name} is not reachable on {$ip}:{$port}. Error: {$errorMessage}";
+                $message = "Service {$service->name} is not reachable on {$ip}:{$port}. Error: {$result['error']}";
 
                 $this->error(
                     "[OFFLINE] {$host->name} - {$service->name} ({$ip}:{$port})"

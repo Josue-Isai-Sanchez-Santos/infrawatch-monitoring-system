@@ -2,14 +2,15 @@
 
 namespace App\Filament\Resources;
 
-use App\Events\DashboardUpdated;
 use App\Filament\Resources\AlertResource\Pages;
 use App\Models\Alert;
+use App\Services\AlertResolutionService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 class AlertResource extends Resource
 {
@@ -157,17 +158,10 @@ class AlertResource extends Resource
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn ($record): bool => $record->status === 'open')
+                    ->visible(fn ($record): bool => $record->status === 'open' && Gate::allows('update', $record))
                     ->action(function ($record): void {
-                        $record->update([
-                            'status' => 'resolved',
-                            'resolved_at' => now(),
-                        ]);
-                        DashboardUpdated::dispatch(
-                            type: 'alert_resolved',
-                            message: 'Una alerta fue resuelta manualmente.'
-                        );
-
+                        Gate::authorize('update', $record);
+                        app(AlertResolutionService::class)->resolve(auth()->user(), $record);
                     }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

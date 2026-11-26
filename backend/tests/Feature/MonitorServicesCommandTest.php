@@ -6,6 +6,7 @@ use App\Models\Alert;
 use App\Models\MonitoredHost;
 use App\Models\MonitoredService;
 use App\Models\ServiceCheck;
+use App\Services\TcpServiceChecker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,6 +16,16 @@ class MonitorServicesCommandTest extends TestCase
 
     public function test_monitor_services_command_creates_alert_when_service_fails(): void
     {
+        $this->mock(TcpServiceChecker::class)
+            ->shouldReceive('check')
+            ->once()
+            ->with('127.0.0.1', 1)
+            ->andReturn([
+                'reachable' => false,
+                'response_time_ms' => 10,
+                'error' => 'connection refused',
+            ]);
+
         config([
             'services.telegram.enabled' => false,
         ]);

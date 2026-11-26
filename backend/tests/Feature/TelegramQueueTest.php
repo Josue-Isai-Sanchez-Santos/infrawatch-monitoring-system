@@ -6,6 +6,7 @@ use App\Jobs\SendTelegramAlert;
 use App\Models\Alert;
 use App\Models\MonitoredHost;
 use App\Models\MonitoredService;
+use App\Services\TcpServiceChecker;
 use App\Services\TelegramNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -19,6 +20,16 @@ class TelegramQueueTest extends TestCase
 
     public function test_monitoring_dispatches_a_job_when_service_goes_offline(): void
     {
+        $this->mock(TcpServiceChecker::class)
+            ->shouldReceive('check')
+            ->once()
+            ->with('127.0.0.1', 1)
+            ->andReturn([
+                'reachable' => false,
+                'response_time_ms' => 10,
+                'error' => 'connection refused',
+            ]);
+
         config([
             'services.telegram.enabled' => true,
             'queue.default' => 'sync',

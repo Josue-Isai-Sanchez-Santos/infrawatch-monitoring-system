@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\MonitoredHost;
 use App\Models\MonitoredService;
+use App\Services\TcpServiceChecker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,6 +14,16 @@ class HostStatusSeparationTest extends TestCase
 
     public function test_tcp_monitor_does_not_change_agent_status_or_last_seen(): void
     {
+        $this->mock(TcpServiceChecker::class)
+            ->shouldReceive('check')
+            ->once()
+            ->with('127.0.0.1', 1)
+            ->andReturn([
+                'reachable' => false,
+                'response_time_ms' => 10,
+                'error' => 'connection refused',
+            ]);
+
         config([
             'services.telegram.enabled' => false,
         ]);
