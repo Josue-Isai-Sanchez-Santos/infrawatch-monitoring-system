@@ -6,11 +6,37 @@ Un tag es una referencia **inmutable por convención** a un commit concreto; un 
 
 ## Estado de la numeración
 
-- **V1.0:** etapa funcional inicial descrita retrospectivamente en el changelog. No se ha confirmado un commit o release histórico.
-- **V2.0:** hito funcional del README original con agentes, alertas, Docker y realtime. **No se ha certificado un commit de corte**.
-- **`master`:** tiene correcciones posteriores a V2.0 (seguridad, mejoras de permisos, refactor TCP, tests y CI). Se recomienda considerar una futura versión `v2.1.0` si el mantenedor decide formalizar este conjunto como lanzamiento compatible.
+InfraWatch adopta **Semantic Versioning 2.0.0** como política de versionado.
 
-El nombre de versión definitiva debe elegirse tras comprobar el estado de los tags y CI; no se crea ninguno automáticamente con este paquete.
+### Historial del proyecto
+
+- **V1.0:** primera etapa funcional del sistema, con Laravel, Filament, PostgreSQL y los modelos básicos de infraestructura. No se ha identificado un release oficial histórico.
+- **V2.0:** consolidación del monitoreo TCP, agente Python, dashboard, Telegram, roles, Docker Compose y actualizaciones mediante WebSocket. Se considera un hito funcional documentado, no un release histórico certificado.
+- **v2.1.0:** primera publicación formal prevista de la línea 2.1. Consolida correcciones de seguridad, protección de administradores, mejoras de historial, pruebas deterministas, auditorías de dependencias, integración continua y documentación técnica.
+
+La publicación de `v2.1.0` solo se considera completada cuando existe una etiqueta Git válida y el correspondiente release ha sido publicado en GitHub.
+
+### Política de versiones futuras
+
+| Tipo | Criterio | Ejemplo |
+|---|---|---|
+| PATCH | Correcciones de errores, vulnerabilidades y actualizaciones compatibles | `2.1.0` → `2.1.1` |
+| MINOR | Nuevas funcionalidades que conservan compatibilidad | `2.1.0` → `2.2.0` |
+| MAJOR | Cambios incompatibles en API, configuración, contratos o integraciones | `2.x` → `3.0.0` |
+
+Las actualizaciones propuestas por Dependabot no se fusionarán automáticamente. Cada cambio deberá superar las verificaciones correspondientes y ser revisado antes de incorporarse a `master`.
+
+Una migración interna importante, como Filament 3 a Filament 5, no obliga por sí sola a incrementar MAJOR; la decisión dependerá de si rompe compatibilidad pública.
+
+### Mantenimiento
+
+- `master` representa la línea principal de desarrollo.
+- Los tags `vX.Y.Z` identifican versiones publicadas y no deben modificarse después de su publicación.
+- Las correcciones de seguridad se priorizarán según gravedad, exposición y compatibilidad.
+- No se garantiza mantenimiento indefinido de versiones antiguas.
+- Las vulnerabilidades deberán reportarse conforme a [SECURITY.md](../SECURITY.md).
+
+El historial detallado de modificaciones se encuentra en [CHANGELOG.md](../CHANGELOG.md).
 
 ## Identificar el commit histórico de V2.0
 
@@ -25,7 +51,20 @@ git log --oneline -- README.md
 
 Busca un commit **anterior a los cambios posteriores a V2.0**, con todas las características anunciadas en ese hito, y verifica su árbol. Nunca selecciones un commit únicamente por su fecha o por la etiqueta que desees crear. Si no puede determinarse con evidencia, no inventes el tag.
 
-### Si se identifica el commit exacto de V2.0
+### Publicación de InfraWatch v2.1.0
+
+La versión `v2.1.0` deberá etiquetar exclusivamente el commit de `master` que haya superado las verificaciones de integración continua y contenga el historial de cambios correspondiente.
+
+Antes de crear el tag:
+
+1. Fusionar el pull request de preparación del release.
+2. Comprobar que Backend CI, Python Agent CI y Gitleaks hayan terminado correctamente.
+3. Verificar que `composer audit --locked` y las demás auditorías no presenten problemas de seguridad pendientes de evaluación.
+4. Confirmar que `CHANGELOG.md` contiene la sección `2.1.0`.
+5. Sincronizar `master` y comprobar que el árbol de trabajo esté limpio.
+6. Crear una etiqueta anotada `v2.1.0` sobre el commit aprobado y publicarla en GitHub.
+
+No deben agregarse commits funcionales a la versión después de crear el tag. Las correcciones posteriores deberán publicarse como `v2.1.1`, `v2.1.2` o la versión que corresponda según la política establecida.
 
 ```bash
 # Reemplazar la variable con el SHA histórico realmente verificado:

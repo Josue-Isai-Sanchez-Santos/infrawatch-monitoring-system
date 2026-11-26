@@ -7,7 +7,11 @@
 [![Gitleaks](https://github.com/Josue-Isai-Sanchez-Santos/infrawatch-monitoring-system/actions/workflows/security-gitleaks.yml/badge.svg)](https://github.com/Josue-Isai-Sanchez-Santos/infrawatch-monitoring-system/actions/workflows/security-gitleaks.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-> **Estado de versiones.** V2.0 es un hito funcional documentado, no necesariamente un tag o release publicado. La rama `master` incorpora correcciones y nuevas pruebas posteriores a ese hito. Consulta [CHANGELOG.md](CHANGELOG.md) y [la política de versiones](docs/releases.md). La versión instalada está determinada por el commit y los archivos de bloqueo, no por esta descripción.
+> **Versionado de InfraWatch.** El proyecto adopta [Semantic Versioning](https://semver.org/lang/es/) para identificar sus versiones. **La línea 2.1 comienza con `v2.1.0`**, que consolida las funcionalidades de monitoreo, las mejoras de seguridad, el fortalecimiento de permisos, las pruebas automatizadas y la documentación del sistema.
+>
+> **V1.0 y V2.0** representan hitos históricos del desarrollo y no deben confundirse con releases oficiales publicados. La disponibilidad de `v2.1.0` se confirma mediante su etiqueta Git y la sección [GitHub Releases](https://github.com/Josue-Isai-Sanchez-Santos/infrawatch-monitoring-system/releases).
+>
+> La rama `master` continuará recibiendo actualizaciones después de cada lanzamiento. Para instalar una versión reproducible, utiliza el tag correspondiente y conserva los archivos de bloqueo de dependencias. Consulta [CHANGELOG.md](CHANGELOG.md) y [la política de versiones](docs/releases.md).
 
 ## Qué hace InfraWatch
 
@@ -130,6 +134,28 @@ En el entorno local del proyecto se registraron **82 pruebas PHP (606 aserciones
 
 El administrador no puede eliminarse a sí mismo ni cambiar su propio rol desde la administración; las operaciones de otros administradores protegen la última cuenta administrativa. Consulta [modelo de permisos](docs/security-model.md). La eliminación de hosts y servicios puede tener efectos por claves foráneas: una Policy de Filament **no equivale a inmutabilidad absoluta en la base de datos**.
 
+
+## Versiones y mantenimiento
+
+InfraWatch utiliza el esquema `MAJOR.MINOR.PATCH` para distinguir actualizaciones compatibles y cambios incompatibles.
+
+| Versión | Alcance |
+|---|---|
+| V1.0 | Desarrollo inicial del backend, modelos de infraestructura y funciones básicas de monitoreo. Hito histórico. |
+| V2.0 | Consolidación del dashboard, agente Python, Telegram, PostgreSQL, Docker Compose y WebSockets. Hito histórico. |
+| **v2.1.0** | Primera versión formal de la línea 2.1: mejoras de seguridad, permisos, validaciones, pruebas, CI y documentación. |
+| v2.1.x | Correcciones de errores, parches de seguridad y actualizaciones compatibles. |
+| v2.2.0 y posteriores | Nuevas funcionalidades compatibles con los contratos públicos existentes. |
+| v3.0.0 | Cambios que rompan compatibilidad de interfaces, API, configuración o integraciones. |
+
+Las actualizaciones de Dependabot se revisarán mediante pull requests y pruebas automatizadas. Una actualización de dependencia no implica automáticamente un cambio de versión mayor de InfraWatch.
+
+La migración de Filament 3 a Filament 5 se realizará en una rama independiente, con pruebas de compatibilidad antes de decidir si corresponde a una versión menor o mayor.
+
+**Estado de publicación:** las versiones descargables oficialmente disponibles se identifican mediante sus [tags y releases de GitHub](https://github.com/Josue-Isai-Sanchez-Santos/infrawatch-monitoring-system/releases).
+
+La política de soporte, el historial y las instrucciones para publicar versiones están disponibles en [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md) y [docs/releases.md](docs/releases.md).
+
 ## Documentación
 
 Comienza por el [índice de documentación](docs/index.md). Incluye guías de instalación, arquitectura, base de datos, API, seguridad, operación, contribuciones, pruebas, diagnóstico, versiones y hoja de ruta. Existen además guías específicas de [Telegram](docs/telegram.md), [WebSockets](docs/realtime-websockets.md) y [servicio Linux](docs/agent-service-linux.md).
@@ -152,7 +178,7 @@ El autor figura como contribuidor de **[XERJ Corpus Hub](https://hub.xerj.org/co
 
 - [SECURITY.md](SECURITY.md): versiones mantenidas y reporte **privado** de vulnerabilidades; nunca publicar claves, tokens, datos personales o exploits sin coordinar.
 - [CONTRIBUTING.md](CONTRIBUTING.md): ramas, desarrollo, estilo y pull requests.
-- [CHANGELOG.md](CHANGELOG.md): historial y cambios pendientes sin inventar releases.
+- [CHANGELOG.md](CHANGELOG.md): historial de V1.0 y V2.0, cambios de v2.1.0 y futuras versiones.
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): convivencia de colaboradores.
 - [LICENSE](LICENSE): MIT.
 
