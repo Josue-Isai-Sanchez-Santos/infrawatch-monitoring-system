@@ -1,231 +1,50 @@
-# Actualización en tiempo real con WebSocket
+# WebSockets y actualización del dashboard
 
-InfraWatch utiliza Laravel Reverb para enviar eventos en tiempo real al panel administrativo.
+InfraWatch usa Laravel Reverb, Laravel Echo y el evento `App\Events\DashboardUpdated`. El backend **no** mantiene la actualización en el mismo proceso HTTP: el evento se encola para evitar bloquear la operación principal.
 
----
+## Contrato del evento
 
-## Objetivo
-
-Actualizar el dashboard cuando ocurre alguno de estos eventos:
-
-- Llega una nueva métrica del agente.
-- Se ejecuta el monitoreo TCP.
-- Se crea una alerta.
-- Se resuelve una alerta.
-- Cambia el estado general de la infraestructura.
-
----
-
-## Tecnología utilizada
-
-- Laravel Broadcasting
-- Laravel Reverb
-- Laravel Echo
-- Pusher JS
-- Filament Admin Panel
-- Vite
-
----
-
-## Evento principal
-
-```text
-App\Events\DashboardUpdated
-```
-
-Canal:
-
-```text
-infrawatch.dashboard
-```
-
-Evento broadcast:
-
-```text
-dashboard.updated
-```
-
-Payload enviado:
-
-```json
-{
-  "type": "host_metric_created",
-  "message": "Nueva métrica recibida desde el agente.",
-  "timestamp": "2026-07-08 20:00:00"
-}
-```
-
----
-
-## Flujo general
-
-```text
-Backend detecta cambio
-    ↓
-Laravel dispara DashboardUpdated
-    ↓
-Reverb transmite evento por WebSocket
-    ↓
-Laravel Echo recibe evento en navegador
-    ↓
-Filament recarga el panel administrativo
-```
-
----
-
-## Archivos principales
-
-| Archivo | Descripción |
+| Campo/método | Valor |
 |---|---|
-| `app/Events/DashboardUpdated.php` | Evento broadcast principal. |
-| `app/Http/Controllers/Api/AgentMetricController.php` | Dispara evento cuando llega una métrica. |
-| `app/Console/Commands/CheckMonitoredServices.php` | Dispara evento cuando termina el chequeo TCP. |
-| `app/Filament/Resources/AlertResource.php` | Dispara evento cuando se resuelve una alerta manualmente. |
-| `resources/js/infrawatch-realtime.js` | Cliente WebSocket del panel. |
-| `resources/js/app.js` | Entrada principal JS cargada por Vite. |
-| `config/broadcasting.php` | Configuración de broadcasting. |
-| `config/reverb.php` | Configuración de Laravel Reverb. |
-| `routes/channels.php` | Canales de broadcasting. |
+| `broadcastOn()` | Canal público `infrawatch.dashboard` |
+| `broadcastAs()` | `dashboard.updated` |
+| `broadcastQueue()` | `broadcasts` |
+| `$connection` | `database` |
+| Interface | `ShouldBroadcast`, `ShouldDispatchAfterCommit`, `ShouldRescue` |
+| Payload | `type`, `message`, `metric_id`, `timestamp` |
 
----
+La cola de eventos es procesada por el servicio Docker `broadcast-worker`. El servidor WebSocket corre en `reverb`; el navegador se suscribe mediante Laravel Echo configurado en `backend/resources/js/`.
 
-## Variables de entorno
+## Variables
 
-```env
+```dotenv
 BROADCAST_CONNECTION=reverb
-
-REVERB_APP_ID=infrawatch-local
-REVERB_APP_KEY=infrawatch-local-key
-REVERB_APP_SECRET=infrawatch-local-secret
-
+REVERB_APP_ID=<ID_LOCAL>
+REVERB_APP_KEY=<CLAVE_LOCAL>
+REVERB_APP_SECRET=<SECRETO_LOCAL>
 REVERB_HOST=127.0.0.1
 REVERB_PORT=8080
 REVERB_SCHEME=http
-
-REVERB_SERVER_HOST=0.0.0.0
-REVERB_SERVER_PORT=8080
-
-VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
-VITE_REVERB_HOST="${REVERB_HOST}"
-VITE_REVERB_PORT="${REVERB_PORT}"
-VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 ```
 
----
+La configuración anterior es ilustrativa para un Laravel fuera de Docker. **En Compose** el backend utiliza `REVERB_HOST=reverb`; el navegador usa `VITE_REVERB_HOST=127.0.0.1` para laboratorio local. No publiques las claves/secretos y no uses HTTP/WSS inseguro en redes externas.
 
-## Ejecutar en desarrollo local
-
-Terminal 1:
-
-```bash
-php artisan serve
-```
-
-Terminal 2:
-
-```bash
-php artisan reverb:start --host=0.0.0.0 --port=8080 --debug
-```
-
-Terminal 3:
-
-```bash
-npm run dev
-```
-
----
-
-## Probar manualmente
-
-Abrir Tinker:
-
-```bash
-php artisan tinker
-```
-
-Disparar evento:
-
-```php
-\App\Events\DashboardUpdated::dispatch(
-    type: 'manual_test',
-    message: 'Prueba manual de WebSocket.'
-);
-```
-
-Resultado esperado:
-
-```text
-Reverb muestra actividad en consola.
-El navegador recibe el evento.
-El panel de Filament se recarga.
-```
-
----
-
-## Probar con flujo real
-
-### Métricas del agente
-
-```bash
-cd agent
-source venv/bin/activate
-python agent.py --once
-```
-
-Resultado esperado:
-
-```text
-Se guarda una métrica.
-Se dispara DashboardUpdated.
-Reverb transmite el evento.
-El panel administrativo se actualiza.
-```
-
-### Monitoreo TCP
+## Ejecutar y observar
 
 ```bash
 cd backend
-php artisan monitor:services
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker logs --tail=100 reverb
+docker compose --env-file .env.docker logs --tail=100 broadcast-worker
 ```
 
-Resultado esperado:
+Prueba funcional: crea una lectura de agente válida en laboratorio, comprueba la persistencia de `host_metrics`, el trabajo en cola y el evento visible en el navegador. **El canal es público:** nunca transmitas tokens, datos personales u otros secretos en el payload.
 
-```text
-Se guardan service_checks.
-Se crean o resuelven alertas si aplica.
-Se dispara DashboardUpdated.
-El panel administrativo se actualiza.
-```
+## Errores frecuentes
 
----
+- Reverb activo pero panel no cambia: comprobar worker `broadcasts`, consola de navegador y variables `VITE_REVERB_*`.
+- Mensajes encolados sin consumir: confirmar conexión `database`, tabla de jobs y worker en ejecución.
+- Timeout al publicar desde contenedor: no usar `127.0.0.1` como destino Reverb interno, sino el servicio `reverb`.
+- En producción, proxy inverso y WSS con políticas adecuadas; el Compose de desarrollo no constituye una configuración endurecida.
 
-## Docker Compose
-
-El servicio `reverb` puede ejecutarse desde Docker Compose:
-
-```bash
-cd backend
-docker compose up -d --build
-```
-
-Servicio esperado:
-
-```text
-infrawatch_reverb
-```
-
-Ver logs:
-
-```bash
-docker compose logs -f reverb
-```
-
----
-
-## Consideraciones
-
-La implementación actual recarga el panel al recibir eventos en tiempo real.
-
-Esto es suficiente para demostrar actualización realtime en V2.0.
-
-En una versión futura se puede mejorar para actualizar widgets específicos sin recargar toda la página.
+Pruebas relacionadas: `QueuedBroadcastTest`, `DashboardUpdatedPayloadTest`. Más información en [arquitectura](architecture.md), [seguridad](../SECURITY.md).

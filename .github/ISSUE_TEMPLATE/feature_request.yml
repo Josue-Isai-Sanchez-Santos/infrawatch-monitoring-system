@@ -1,0 +1,37 @@
+name: Propuesta de mejora
+description: Sugiere cambios funcionales o técnicos con justificación.
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe el problema que resolverá la mejora. No publiques credenciales ni información sensible.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema que quieres resolver
+      description: Explica el caso de uso y su impacto.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Solución propuesta
+      description: Describe cómo debería funcionar.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas y riesgos
+      description: Compatibilidad, costes, rendimiento y seguridad.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      description: Define qué pruebas demostrarían que está terminada.
+    validations:
+      required: false

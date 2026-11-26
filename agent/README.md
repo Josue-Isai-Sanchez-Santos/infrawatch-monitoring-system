@@ -1,262 +1,45 @@
-# InfraWatch Agent
+# Agente Python de InfraWatch
 
-Agente Python para InfraWatch.
+Cliente Python para enviar métricas locales a `POST /api/agent/metrics` de InfraWatch. **No necesita credenciales de usuarios del panel:** utiliza un token Bearer por host.
 
-Este módulo recolecta métricas básicas del sistema operativo y las envía al backend Laravel mediante una API REST.
+## Qué mide y envía
 
----
+`hostname`, `ip_address`, `operating_system`, `cpu_usage`, `ram_usage`, `disk_usage`, `uptime_seconds` y un `reading_id` UUID para idempotencia. Implementación: [`agent.py`](agent.py).
 
-## Métricas recolectadas
-
-- Hostname
-- Dirección IP
-- Sistema operativo
-- Uso de CPU
-- Uso de RAM
-- Uso de disco
-- Uptime del sistema
-
----
-
-## Tecnologías
-
-| Tecnología | Uso |
-|---|---|
-| Python | Lenguaje del agente |
-| psutil | Lectura de métricas del sistema |
-| requests | Envío HTTP hacia el backend |
-| python-dotenv | Lectura de variables desde `.env` |
-| logging | Logs locales |
-| argparse | Opciones de ejecución por terminal |
-
----
-
-## Instalación
-
-### 1. Entrar a la carpeta del agente
+## Instalación aislada
 
 ```bash
-cd agent
+# Desde la raíz del repositorio
+python3 -m venv agent/.venv
+agent/.venv/bin/python -m pip install -r agent/requirements.txt
+cp agent/.env.example agent/.env
 ```
 
-### 2. Crear entorno virtual
+Edita `agent/.env` con tu URL de API y un token válido asignado al host. **Nunca publiques ese archivo**. La configuración admite `INTERVAL_SECONDS`, `REQUEST_TIMEOUT_SECONDS`, `RETRY_ATTEMPTS`, `RETRY_DELAY_SECONDS`, `LOG_FILE`, `LOG_MAX_BYTES` y `LOG_BACKUP_COUNT`.
 
 ```bash
-python3 -m venv venv
+agent/.venv/bin/python agent/agent.py --once
+agent/.venv/bin/python agent/agent.py --interval 60
+agent/.venv/bin/python agent/agent.py --interval 60 --silent
+agent/.venv/bin/python agent/agent.py --once --verbose
+agent/.venv/bin/python agent/agent.py --help
 ```
 
-### 3. Activar entorno virtual
+Sin `--interval` realiza **una sola lectura**. `--silent` inhibe la salida en consola pero deja registro en archivo. `--verbose` activa eventos `DEBUG`. Los logs rotan según tamaño y número de copias de la configuración.
+
+## Reintentos e idempotencia
+
+El agente reintenta fallos de red, timeouts, respuestas HTTP 5xx y HTTP 429 (respeta `Retry-After` con límites). **No** reintenta errores permanentes 4xx distintos de 429 ni fallos de certificado TLS. Reutiliza el mismo `reading_id` entre intentos para evitar métricas duplicadas. Interrumpe el ciclo cuando recibe señal de parada.
+
+## Pruebas
 
 ```bash
-source venv/bin/activate
+# Desde la raíz
+agent/.venv/bin/python -m unittest discover -s agent/tests -p 'test_*.py' -v
 ```
 
-### 4. Instalar dependencias
+Las pruebas usan `unittest.mock` y no envían métricas reales. La CI configura Python 3.12; ejecutar con un Python diferente puede revelar incompatibilidades adicionales. Dependencias fijadas en `requirements.txt`.
 
-```bash
-pip install -r requirements.txt
-```
+## Servicio Linux y seguridad
 
-### 5. Crear archivo de configuración
-
-```bash
-cp .env.example .env
-```
-
----
-
-## Configuración
-
-El agente utiliza un archivo `.env` local para cargar la URL de la API, el token del equipo monitoreado, el intervalo de ejecución, tiempos de espera, reintentos y ruta de logs.
-
-Ejemplo de `.env`:
-
-```env
-API_URL=http://127.0.0.1:8000/api/agent/metrics
-AGENT_TOKEN=your-agent-token-here
-INTERVAL_SECONDS=60
-REQUEST_TIMEOUT_SECONDS=5
-RETRY_ATTEMPTS=3
-RETRY_DELAY_SECONDS=3
-LOG_FILE=logs/agent.log
-```
-
-El valor de `AGENT_TOKEN` debe coincidir con el campo `agent_token` del equipo registrado en el panel de InfraWatch.
-
-El archivo `.env` no debe subirse al repositorio.
-
----
-
-## Ejecución
-
-### Ejecutar una sola vez
-
-```bash
-python agent.py --once
-```
-
-### Ejecutar una sola vez con logs detallados
-
-```bash
-python agent.py --once --verbose
-```
-
-### Ejecutar automáticamente cada 60 segundos
-
-```bash
-python agent.py --interval 60
-```
-
-### Ejecutar automáticamente sin salida en consola
-
-```bash
-python agent.py --interval 60 --silent
-```
-
-### Ver ayuda
-
-```bash
-python agent.py --help
-```
-
-Si no se especifica ningún argumento, el agente ejecuta un envío único.
-
----
-
-## Logs locales
-
-El agente escribe logs locales en:
-
-```text
-logs/agent.log
-```
-
-La ruta puede cambiarse desde la variable:
-
-```env
-LOG_FILE=logs/agent.log
-```
-
-Los logs no deben subirse al repositorio.
-
----
-
-## Reintentos automáticos
-
-El agente puede reintentar el envío de métricas cuando ocurre un error de red, timeout o fallo temporal del backend.
-
-Variables relacionadas:
-
-```env
-REQUEST_TIMEOUT_SECONDS=5
-RETRY_ATTEMPTS=3
-RETRY_DELAY_SECONDS=3
-```
-
----
-
-## Respuesta esperada
-
-```text
-Métricas enviadas correctamente.
-```
-
-Si el token no existe o no coincide, el backend responderá con error de autorización.
-
----
-
-## Flujo de trabajo
-
-```text
-Agente Python
-    ↓
-Lee configuración desde .env
-    ↓
-Recolecta CPU, RAM, disco y uptime
-    ↓
-Envía datos por HTTP POST
-    ↓
-Backend Laravel valida el token
-    ↓
-Backend guarda las métricas
-    ↓
-Backend dispara evento realtime
-    ↓
-Filament muestra los datos en Host Metrics y Dashboard
-```
-
----
-
-## Dependencias
-
-Las dependencias se encuentran en:
-
-```text
-requirements.txt
-```
-
-Instalación:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Variables de entorno
-
-| Variable | Descripción |
-|---|---|
-| `API_URL` | URL del endpoint de métricas del backend. |
-| `AGENT_TOKEN` | Token asignado al equipo monitoreado. |
-| `INTERVAL_SECONDS` | Intervalo por defecto para ejecución automática. |
-| `REQUEST_TIMEOUT_SECONDS` | Tiempo máximo de espera para la petición HTTP. |
-| `RETRY_ATTEMPTS` | Número de reintentos si falla el envío. |
-| `RETRY_DELAY_SECONDS` | Tiempo de espera entre reintentos. |
-| `LOG_FILE` | Ruta del archivo de log local. |
-
----
-
-## Instalación como servicio Linux
-
-Para ejecutar el agente como servicio de sistema con `systemd`, revisar:
-
-[Instalación del agente como servicio Linux](../docs/agent-service-linux.md)
-
----
-
-## Seguridad
-
-No dejar tokens reales escritos directamente en el código.
-
-No subir el archivo:
-
-```text
-.env
-```
-
-Sí se puede subir:
-
-```text
-.env.example
-```
-
-No subir tampoco:
-
-```text
-logs/
-venv/
-__pycache__/
-```
-
-Si el token se expone, debe cambiarse desde el panel de InfraWatch y actualizarse en el `.env` local del agente.
-
----
-
-## Mejoras futuras
-
-- Envío de métricas de red.
-- Envío de temperatura del sistema si el hardware lo permite.
-- Logs locales más detallados con rotación.
-- Identificador único del agente.
-- Instalador automático para Linux.
+Consulta [systemd](../docs/agent-service-linux.md) y [operación del agente](../docs/agent-operations.md). No registres el token en logs; para rotarlo actualiza el token del host y `agent/.env` en coordinación para no interrumpir envíos. Evita publicar la API HTTP en redes no confiables sin HTTPS y autenticación configurada.
