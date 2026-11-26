@@ -1,0 +1,51 @@
+name: Reporte de error
+description: Reporta errores reproducibles sin incluir secretos ni datos privados.
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **No utilices este formulario para vulnerabilidades de seguridad.** Sigue SECURITY.md y no incluyas tokens, contraseñas, APP_KEY o datos reales.
+  - type: input
+    id: version
+    attributes:
+      label: Commit o versión
+      description: SHA abreviado o tag; no publiques configuraciones privadas.
+      placeholder: abc1234
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Comportamiento observado
+      description: Explica el fallo sin logs sensibles.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Pasos mínimos para reproducir
+      description: Usa datos falsos y un entorno de prueba.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Componente
+      options:
+        - Backend/API
+        - Panel Filament
+        - Docker/PostgreSQL
+        - Agente Python
+        - WebSocket/Telegram
+        - Documentación
+        - Otro
+    validations:
+      required: true

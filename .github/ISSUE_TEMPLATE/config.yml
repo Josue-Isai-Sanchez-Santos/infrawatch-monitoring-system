@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Política de seguridad (no compartir vulnerabilidades públicamente)
+    url: https://github.com/Josue-Isai-Sanchez-Santos/infrawatch-monitoring-system/blob/master/SECURITY.md
+    about: Para un problema de seguridad, consulta cómo reportarlo de forma privada.
+  - name: Documentación técnica
+    url: https://github.com/Josue-Isai-Sanchez-Santos/infrawatch-monitoring-system/blob/master/docs/index.md
+    about: Instalación, operación, permisos, pruebas y diagnóstico.

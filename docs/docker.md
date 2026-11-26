@@ -1,254 +1,75 @@
-# Docker Compose
+# Docker Compose — InfraWatch (desarrollo)
 
-InfraWatch incluye una configuración de Docker Compose para levantar el backend, PostgreSQL y procesos auxiliares.
+**Ubicación:** `backend/docker-compose.yml`. Esta guía refleja el Compose de `master`: **todos los servicios están declarados**, no existe profile opcional para `queue`, y las contraseñas se obtienen de `.env.docker`.
 
----
+## Servicios
 
-## Servicios incluidos
+| Servicio | Función | Puerto publicado (configuración actual) |
+|---|---|---|
+| `app` | Laravel bajo `php artisan serve` | 8000 |
+| `postgres` | PostgreSQL 16 con volumen `infrawatch_postgres_data` | 5432 |
+| `scheduler` | `php artisan schedule:work` | Ninguno |
+| `queue` | Trabajos estándar en cola `default` | Ninguno |
+| `broadcast-worker` | Trabajos de eventos en cola `broadcasts` | Ninguno |
+| `reverb` | WebSocket Reverb | 8080 |
+| `vite` | Desarrollo frontend con Node 24 | 127.0.0.1:5173 |
 
-| Servicio | Descripción |
-|---|---|
-| `app` | Aplicación Laravel ejecutada con `php artisan serve`. |
-| `postgres` | Base de datos PostgreSQL. |
-| `scheduler` | Ejecuta Laravel Scheduler con `php artisan schedule:work`. |
-| `reverb` | Servidor WebSocket Laravel Reverb. |
-| `queue` | Worker de colas preparado para uso futuro. Se ejecuta mediante profile opcional. |
-
----
-
-## Levantar servicios principales
-
-Desde la carpeta `backend`:
+## Preparación
 
 ```bash
-docker compose up -d --build
+cd backend
+cp .env.example .env
+cp .env.docker.example .env.docker
 ```
 
-Esto levanta:
-
-- Laravel app
-- PostgreSQL
-- Scheduler
-- Reverb
-
----
-
-## Levantar solo PostgreSQL
-
-Para trabajar con Laravel fuera de Docker:
+**Solo si aún no existen.** Modificar `DB_PASSWORD`, `REVERB_APP_ID`, `REVERB_APP_KEY` y `REVERB_APP_SECRET` en `.env.docker` antes de iniciar. `.env.example` usa valores de demostración: Laravel fuera de Docker espera `127.0.0.1`; Compose define el hostname de servicio `postgres` dentro de los contenedores y otros overrides.
 
 ```bash
-docker compose up -d postgres
+docker compose --env-file .env.docker config --quiet
+docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker logs --tail=100 app
 ```
 
----
+La app ejecuta `composer install` y `php artisan migrate --force` durante su arranque. Evita arrancar instancias contra una base de datos con datos que no hayas respaldado y revisa migraciones antes de desplegar.
 
-## Ver servicios activos
+## Comandos habituales
 
 ```bash
-docker compose ps
+docker compose --env-file .env.docker exec app php artisan key:generate
+docker compose --env-file .env.docker exec app php artisan make:filament-user
+docker compose --env-file .env.docker exec app php artisan route:list
+docker compose --env-file .env.docker exec app php artisan migrate:status
+docker compose --env-file .env.docker exec app php artisan monitor:services
+docker compose --env-file .env.docker exec app php artisan monitor:cleanup --days=30 --dry-run
+docker compose --env-file .env.docker logs --tail=100 queue
+docker compose --env-file .env.docker logs --tail=100 broadcast-worker
 ```
 
----
+Para usar Laravel **fuera** de Docker, también debes asegurar que la contraseña de `.env` sea igual a la cuenta real de PostgreSQL. Copiar `.env.example` no crea el usuario ni cambia automáticamente la contraseña del contenedor.
 
-## Ver logs
+## Respaldo de PostgreSQL
 
-Laravel app:
+Un respaldo consistente puede realizarse con `pg_dump`; antes de restaurar comprueba ruta, permisos, espacio disponible y compatibilidad. Ejemplo de desarrollo (desde `backend`):
 
 ```bash
-docker compose logs -f app
+# No imprimir contraseñas en logs ni historial
+mkdir -p "$HOME/infrawatch-backups"
+# pg_dump corre dentro del contenedor y usa la cuenta de Compose
+# El archivo resultante queda en la máquina local
+# Ajusta usuario y base si no coinciden con el ejemplo:
+docker compose --env-file .env.docker exec -T postgres \
+  sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom' \
+  > "$HOME/infrawatch-backups/infrawatch-local.dump"
 ```
 
-Scheduler:
+**Conserva los respaldos fuera del repositorio y nunca los subas a Git.** Este comando es una referencia operativa; la política de retención y prueba de restauración son responsabilidad del operador. Si hay datos reales, trabaja con una copia antes de ejecutar pruebas destructivas.
 
-```bash
-docker compose logs -f scheduler
-```
+## Peligros
 
-Reverb:
+- `docker compose down` detiene y elimina contenedores; normalmente conserva volúmenes. **`down -v` elimina volúmenes y puede causar pérdida permanente de datos**.
+- `migrate:fresh` **destruye** las tablas existentes.
+- Los puertos `8000:8000`, `5432:5432`, `8080:8080` pueden quedar expuestos en interfaces de red. Para laboratorio cerrado puedes vincularlos a `127.0.0.1`; en producción usar proxy inverso, HTTPS/WSS, red privada, secretos únicos y PHP-FPM en lugar del servidor de desarrollo.
+- `APP_DEBUG=true` es solo para desarrollo.
 
-```bash
-docker compose logs -f reverb
-```
-
-PostgreSQL:
-
-```bash
-docker compose logs -f postgres
-```
-
-Queue worker:
-
-```bash
-docker compose logs -f queue
-```
-
----
-
-## Acceder al panel
-
-```text
-http://127.0.0.1:8000/admin
-```
-
----
-
-## Crear usuario administrador
-
-```bash
-docker compose exec app php artisan make:filament-user
-```
-
-Después de crear el usuario, asignar rol administrador si es necesario:
-
-```bash
-docker compose exec app php artisan tinker
-```
-
-```php
-$user = \App\Models\User::first();
-$user->update(['role' => 'admin']);
-```
-
----
-
-## Ejecutar comandos Artisan
-
-Migraciones:
-
-```bash
-docker compose exec app php artisan migrate
-```
-
-Monitoreo TCP:
-
-```bash
-docker compose exec app php artisan monitor:services
-```
-
-Limpieza de historial:
-
-```bash
-docker compose exec app php artisan monitor:cleanup --days=30 --dry-run
-```
-
-Tests:
-
-```bash
-docker compose exec app php artisan test
-```
-
-Rutas:
-
-```bash
-docker compose exec app php artisan route:list
-```
-
----
-
-## Levantar queue worker opcional
-
-El servicio `queue` está preparado con profile opcional.
-
-Para levantarlo:
-
-```bash
-docker compose --profile queue up -d
-```
-
-Para ver logs:
-
-```bash
-docker compose logs -f queue
-```
-
----
-
-## Detener servicios
-
-```bash
-docker compose down
-```
-
----
-
-## Detener y eliminar volumen de base de datos
-
-Esto elimina los datos de PostgreSQL.
-
-```bash
-docker compose down -v
-```
-
----
-
-## Variables importantes
-
-Dentro de Docker, el backend debe usar:
-
-```env
-DB_HOST=postgres
-```
-
-Cuando se ejecuta Laravel fuera de Docker, normalmente se usa:
-
-```env
-DB_HOST=127.0.0.1
-```
-
-Dentro de Docker, Laravel publica eventos hacia Reverb usando:
-
-```env
-REVERB_HOST=reverb
-REVERB_PORT=8080
-```
-
-Desde el navegador, normalmente se usa:
-
-```env
-VITE_REVERB_HOST=127.0.0.1
-VITE_REVERB_PORT=8080
-```
-
----
-
-## Reverb en Docker Compose
-
-El servicio `reverb` debe estar dentro del bloque `services` en `docker-compose.yml`.
-
-Estructura correcta:
-
-```yaml
-services:
-  app:
-    # ...
-
-  scheduler:
-    # ...
-
-  postgres:
-    # ...
-
-  reverb:
-    # ...
-
-volumes:
-  infrawatch_postgres_data:
-```
-
-Si `reverb:` queda fuera de `services`, Docker Compose no lo interpretará como servicio del proyecto.
-
----
-
-## Notas
-
-Esta configuración está pensada para desarrollo y demostración técnica.
-
-Para producción se recomienda:
-
-- Usar Nginx o Caddy como servidor web.
-- Ejecutar PHP-FPM en lugar de `php artisan serve`.
-- Usar variables de entorno seguras.
-- Activar HTTPS.
-- Separar credenciales reales del repositorio.
-- Usar un servidor WebSocket configurado para producción.
+Ver [seguridad](../SECURITY.md), [instalación](installation.md), [operación](operations.md) y [diagnóstico](troubleshooting.md).
